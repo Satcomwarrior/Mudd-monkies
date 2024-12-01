@@ -1,36 +1,103 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PDF Takeoff Tool
+
+A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn/ui that allows users to measure distances and areas directly on PDF blueprints.
+
+## Features
+
+- 📄 PDF file upload and rendering
+- 📏 Linear measurements with real-world units
+- 📐 Area measurements for spaces
+- 🔍 Scale calibration for accurate measurements
+- 📱 Responsive design
+- 🎨 Modern UI with shadcn/ui components
+- 📄 Multi-page PDF support
+- 💾 Page-specific measurements
+
+## Tech Stack
+
+- [Next.js 15](https://nextjs.org/) - React framework
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [PDF.js](https://mozilla.github.io/pdf.js/) - PDF rendering
+- [shadcn/ui](https://ui.shadcn.com/) - UI components
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Lucide Icons](https://lucide.dev/) - Icons
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone <repository-url>
+cd <project-directory>
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Upload PDF**: Click the file input to upload your PDF blueprint.
 
-## Learn More
+2. **Set Scale**:
+   - Enter a known measurement length
+   - Select the unit (feet, meters, or inches)
+   - Click "Set Scale"
+   - Click two points on the drawing that represent that known length
 
-To learn more about Next.js, take a look at the following resources:
+3. **Take Measurements**:
+   - Use the "Measure" tool for linear measurements
+   - Use the "Area" tool for area measurements
+   - Click points on the drawing to create measurements
+   - For areas, click near the starting point to complete the shape
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. **Navigate Pages**:
+   - Use "Previous" and "Next" buttons to move between PDF pages
+   - Measurements are saved per page
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. **View Results**:
+   - Measurements are displayed in real-time on the drawing
+   - A list of all measurements for the current page is shown below
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/                  # Next.js app directory
+├── components/          
+│   ├── ui/              # shadcn/ui components
+│   └ PdfViewer.tsx    # Main PDF viewer component
+├── hooks/
+│   └── usePdfHandler.ts # PDF handling logic
+└── types/
+    └── pdf.ts           # TypeScript definitions
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Development
+
+- Built with Next.js App Router
+- Uses TypeScript for type safety
+- Implements a custom hook for PDF handling
+- Utilizes two-canvas system for PDF and annotations
+- Follows modern React patterns and best practices
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
