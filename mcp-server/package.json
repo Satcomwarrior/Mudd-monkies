@@ -1,0 +1,36 @@
+{
+  "name": "mudd-monkies-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for PDF Takeoff Tool with development support",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "mudd-monkies-mcp-server": "build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "pdf",
+    "takeoff",
+    "construction"
+  ],
+  "author": "PDF Takeoff Tool Team",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
