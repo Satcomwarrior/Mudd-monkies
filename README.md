@@ -38,7 +38,9 @@ A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn
 │       └── pdf.ts           # TypeScript definitions
 ├── mcp-server/              # MCP server for Claude integration
 │   ├── src/
-│   │   └── index.ts        # MCP server implementation
+│   │   ├── index.ts        # MCP server implementation
+│   │   └── tools/
+│   │       └── constructGuidance.ts
 │   ├── package.json        # MCP server dependencies
 │   └── tsconfig.json       # MCP server TypeScript config
 └── README.md               # This file
@@ -117,6 +119,7 @@ This project includes a complete **Model Context Protocol (MCP)** server that en
 ### MCP Server Features
 
 - ✅ **Echo Tool**: Basic connectivity testing
+- 🧠 **Construct Guidance Tool**: Calls an external LLM with Claude-provided artifacts
 - 🚧 **PDF Analysis Tools**: Extract measurements and validate blueprints (coming soon)
 - 🚧 **Construction Calculations**: Area calculations and material estimations (coming soon)
 - 🚧 **Blueprint Validation**: Automated quality checks (coming soon)
@@ -136,7 +139,33 @@ npm start
 # Press Ctrl+C to stop
 ```
 
-3. **Configure Claude Desktop**:
+3. **Configure MCP Server Environment**:
+
+   Create `mcp-server/.env` (already checked into the repo) or update the existing one with values that point to your runtime and artifact storage:
+
+   ```ini
+   # Where Claude will drop prompt artifacts that the MCP server can read
+   CLAUDE_AI_ARTIFACTS_PATH=C:\\Users\\Muddm\\Downloads\\CLAUDE_AI_ARTIFACTS
+
+   # LLM runtime endpoint + auth
+   LLM_API_URL=http://localhost:11434/v1/generate
+   LLM_API_KEY=
+
+   # Optional defaults for the construct_guidance tool
+   LLM_MODEL=claude-3-opus
+   LLM_TEMPERATURE=0.2
+   LLM_MAX_TOKENS=1024
+   LLM_REQUEST_TIMEOUT_MS=60000
+   ```
+
+   > **Tip (Windows):** Use escaped backslashes (`\\`) inside the `.env` file so Node.js resolves the path correctly. Ensure the specified folder exists and is accessible to the MCP process.
+
+4. **Place prompt artifacts**:
+
+   1. Create the directory defined by `CLAUDE_AI_ARTIFACTS_PATH` (for example `C:\Users\Muddm\Downloads\CLAUDE_AI_ARTIFACTS`).
+   2. Drop prompt templates (e.g., `guidance_prompt.txt`) and any supporting context files (PDF summaries, project specs, etc.) into that folder before invoking the tool.
+
+5. **Configure Claude Desktop**:
    
    Add to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
    
@@ -153,9 +182,9 @@ npm start
    
    Replace `/absolute/path/to/Mudd-monkies` with the actual path to your project.
 
-4. **Restart Claude Desktop** to load the MCP server.
+6. **Restart Claude Desktop** to load the MCP server.
 
-5. **Test the Integration**:
+7. **Test the Integration**:
    
    In Claude, try:
    ```
@@ -163,6 +192,25 @@ npm start
    ```
    
    Claude should respond using the MCP echo tool.
+
+### Using the `construct_guidance` Tool
+
+Once Claude is connected, provide the prompt artifact names and any optional overrides when you invoke the tool. Example request inside a Claude conversation:
+
+```
+Call the `construct_guidance` MCP tool with:
+{
+  "promptFile": "guidance_prompt.txt",
+  "contextFiles": ["project_scope.md", "site_notes.md"],
+  "variables": {
+    "project_name": "Northside Library",
+    "due_date": "2024-09-30"
+  },
+  "temperature": 0.1
+}
+```
+
+The helper will read each artifact from `CLAUDE_AI_ARTIFACTS_PATH`, interpolate variables like `{{ project_name }}` inside the template, forward the constructed payload to your LLM runtime, and return the generated guidance back to Claude. Errors clearly indicate whether an artifact is missing or if the runtime call failed, making troubleshooting straightforward.
 
 ### MCP Development
 
@@ -195,6 +243,7 @@ npm start
 
 **Available Tools**:
 - `echo`: Test tool that echoes back messages
+- `construct_guidance`: Generates constructability guidance using prompt artifacts and an external LLM runtime
 - More tools coming soon for PDF analysis and construction calculations
 
 ### Extending the MCP Server

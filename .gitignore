@@ -31,6 +31,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!mcp-server/.env
+
+# MCP server build artifacts and dependencies
+/mcp-server/build/
+/mcp-server/node_modules/
 
 # vercel
 .vercel
