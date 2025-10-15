@@ -313,3 +313,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - The echo tool demonstrates proper MCP tool implementation
 - Ready for immediate Claude integration and testing
 - Extensible architecture for additional construction tools
+
+## Quantum-inspired optimisation explained
+
+The `python/quantum_blueprint_optimizer.py` module is a classical solver that borrows the maths of continuous-time quantum walks. It is not a quantum computer, but it does simulate a complex-valued wavefunction so the optimiser can examine many layout permutations at once without getting trapped in a greedy corner case.
+
+- **What actually happens** – The solver builds a Hamiltonian matrix where low energy corresponds to desirable fixture relationships. At each step it evolves a complex state vector `psi` with the textbook update `U = torch.linalg.matrix_exp(-1j * H * dt)` and renormalises the result. This is straight from the Schrödinger equation and runs efficiently on a GPU such as an RTX 3070.
+- **Why bother** – Greedy heuristics settle for the first locally convenient placement. Brute force enumerates astronomically many combinations. The simulated quantum walk keeps a global view of the blueprint, allowing the probability wave to reinforce globally consistent solutions instead of getting stuck.
+- **What you get back** – After evolution the algorithm samples the highest-probability fixtures, returning both the probabilities and the raw wavefunction so you can audit or post-process the result. There is no marketing smoke: you can inspect the Hamiltonian, probabilities, and selected node IDs directly.
+
+This section exists so engineers can evaluate the approach without hype. If the model does not deliver, you can adjust the Hamiltonian weights, add explicit penalties or preferences, or swap in a different optimiser entirely.
