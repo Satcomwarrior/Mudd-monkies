@@ -1,0 +1,47 @@
+# config.yaml
+
+parser_settings:
+  # The maximum distance between two fixtures to be considered connected.
+  proximity_radius: 75.0
+
+  # --- Define your blueprint symbols here ---
+  # This library identifies fixtures based on their shape's dimensions.
+  symbol_library:
+    - name: socket_standard
+      dimensions:
+        width: 5.0
+        height: 5.0
+      tolerance: 1.0 # How much the dimensions can vary.
+      base_cost: 1.5 # The default energy/cost for placing this node.
+
+    - name: vent_small
+      dimensions:
+        width: 20.0
+        height: 5.0
+      tolerance: 1.5
+      base_cost: 2.0
+        
+    - name: light_fixture_circular # Example for future non-rect support
+      type: circle # Not yet implemented in parser, but shows extensibility
+      dimensions:
+        radius: 15.0
+      tolerance: 2.0
+      base_cost: 3.0
+
+  # --- Define the "Harmony" rules for graph weaving ---
+  # These rules determine the interaction energy between connected nodes.
+  # Negative weight = harmony (attraction)
+  # Positive weight = dissonance (repulsion)
+  harmony_rules:
+    - type1: socket_standard
+      type2: socket_standard
+      weight: 5.0 # Strongly penalize sockets being too close.
+
+    - type1: vent_small
+      type2: vent_small
+      weight: -1.5 # Encourage vents to be near each other.
+
+    - type1: socket_standard
+      type2: vent_small
+      weight: 0.5 # Slightly discourage sockets from being right next to vents.
+
