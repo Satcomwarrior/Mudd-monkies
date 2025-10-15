@@ -22,7 +22,16 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - name: Check for package-lock.json
+      run: |
+        if [ ! -f package-lock.json ]; then
+          echo "❌ ERROR: package-lock.json is missing!"
+          echo "Please run 'npm install' locally to generate package-lock.json and commit it."
+          echo "This file is required for reproducible builds with 'npm ci'."
+          exit 1
+        fi
     - name: Install dependencies
-      run: npm install
+      run: npm ci
     - name: Build with webpack
       run: npm run build
