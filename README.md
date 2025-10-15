@@ -241,6 +241,14 @@ To add new tools:
 4. Rebuild: `npm run build`
 5. Restart Claude Desktop
 
+## Testing
+
+The project currently relies on linting as its automated test coverage. Run the suite before committing changes:
+
+```bash
+npm run lint
+```
+
 ## Development
 
 - Built with Next.js App Router
