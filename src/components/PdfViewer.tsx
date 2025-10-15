@@ -1,4 +1,12 @@
-import { ChangeEvent, MouseEvent } from 'react';
+import {
+  ChangeEvent,
+  MouseEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,6 +19,8 @@ import {
 import { usePdfHandler } from '@/hooks/usePdfHandler';
 import { MeasurementUnit, Point } from '@/types/pdf';
 import { Ruler, Move } from 'lucide-react';
+import { AiGuidancePanel } from '@/components/AiGuidancePanel';
+import type { ConstructGuidanceMessage } from '@/types/guidance';
 
 export function PdfViewer() {
   const {
@@ -42,9 +52,100 @@ export function PdfViewer() {
     calculateArea,
   } = usePdfHandler();
 
+  const [guidanceMessages, setGuidanceMessages] = useState<ConstructGuidanceMessage[]>([]);
+  const [isGuidanceLoading, setIsGuidanceLoading] = useState(false);
+  const [guidanceError, setGuidanceError] = useState<string | null>(null);
+  const guidanceHistoryRef = useRef<ConstructGuidanceMessage[]>([]);
+
+  useEffect(() => {
+    guidanceHistoryRef.current = guidanceMessages;
+  }, [guidanceMessages]);
+
+  const measurementCount = useMemo(
+    () => (measurements[currentPage] || []).length,
+    [measurements, currentPage]
+  );
+
+  const requestGuidance = useCallback(
+    async (
+      event: 'pdf_opened' | 'measurement_completed' | 'custom_prompt',
+      payload: Record<string, unknown>
+    ) => {
+      if (!pdf) return;
+
+      setIsGuidanceLoading(true);
+      setGuidanceError(null);
+
+      try {
+        const response = await fetch('/api/guidance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event,
+            payload,
+            history: guidanceHistoryRef.current,
+          }),
+        });
+
+        const responseText = await response.text();
+        let parsed: unknown = null;
+
+        if (responseText) {
+          try {
+            parsed = JSON.parse(responseText);
+          } catch (jsonError) {
+            parsed = { error: responseText, details: String(jsonError) };
+          }
+        }
+
+        if (!response.ok) {
+          const errorMessage =
+            typeof parsed === 'object' && parsed && 'error' in parsed
+              ? String((parsed as Record<string, unknown>).error)
+              : response.statusText;
+          throw new Error(errorMessage || 'Unable to fetch ConstructConnect guidance.');
+        }
+
+        const data = parsed as { messages?: ConstructGuidanceMessage[] };
+        if (Array.isArray(data?.messages)) {
+          setGuidanceMessages((prev) => {
+            const merged = [...prev];
+            data.messages.forEach((message) => {
+              if (!merged.find((existing) => existing.id === message.id)) {
+                merged.push(message);
+              }
+            });
+            return merged;
+          });
+        }
+      } catch (error) {
+        setGuidanceError(
+          error instanceof Error
+            ? error.message
+            : 'Unexpected error while fetching ConstructConnect guidance.'
+        );
+      } finally {
+        setIsGuidanceLoading(false);
+      }
+    },
+    [pdf]
+  );
+
+  const handleRefreshGuidance = useCallback(() => {
+    if (!pdf) return;
+    void requestGuidance('custom_prompt', {
+      reason: 'manual_refresh',
+      page: currentPage,
+      measurementCount,
+      unit: measurementUnit,
+    });
+  }, [currentPage, measurementCount, measurementUnit, pdf, requestGuidance]);
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setGuidanceMessages([]);
+      setGuidanceError(null);
       loadPdf(file);
     }
   };
@@ -94,6 +195,11 @@ export function PdfViewer() {
         });
         setMeasureStart(null);
         setCurrentMeasurement([]);
+        void requestGuidance('measurement_completed', {
+          page: currentPage,
+          measurement: newMeasurement,
+          unit: measurementUnit,
+        });
       }
     } else if (tool === 'area') {
       if (
@@ -117,6 +223,11 @@ export function PdfViewer() {
         });
         setAreaPoints([]);
         setCurrentMeasurement([]);
+        void requestGuidance('measurement_completed', {
+          page: currentPage,
+          measurement: newMeasurement,
+          unit: measurementUnit,
+        });
       } else {
         const newPoints = [...areaPoints, point];
         setAreaPoints(newPoints);
@@ -141,6 +252,15 @@ export function PdfViewer() {
       setCurrentMeasurement([...areaPoints, point]);
     }
   };
+
+  useEffect(() => {
+    if (!pdf) return;
+    void requestGuidance('pdf_opened', {
+      page: currentPage,
+      measurementCount,
+      unit: measurementUnit,
+    });
+  }, [pdf, currentPage, measurementCount, measurementUnit, requestGuidance]);
 
   return (
     <div className="flex flex-col items-center w-full max-w-7xl mx-auto p-4 space-y-4">
@@ -246,22 +366,30 @@ export function PdfViewer() {
         />
       </div>
 
-      <div className="w-full bg-white p-4 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Measurements (Page {currentPage})</h3>
-        <div className="space-y-2">
-          {(measurements[currentPage] || []).map((m, i) => (
-            <div
-              key={m.id}
-              className="p-2 border-b border-gray-100 last:border-0 text-sm text-gray-600"
-            >
-              {m.type === 'linear' ? (
-                <span>Distance {i + 1}: {m.value} {measurementUnit}</span>
-              ) : (
-                <span>Area {i + 1}: {m.value} {measurementUnit}²</span>
-              )}
-            </div>
-          ))}
+      <div className="w-full flex flex-col lg:flex-row gap-4">
+        <div className="flex-1 bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Measurements (Page {currentPage})</h3>
+          <div className="space-y-2">
+            {(measurements[currentPage] || []).map((m, i) => (
+              <div
+                key={m.id}
+                className="p-2 border-b border-gray-100 last:border-0 text-sm text-gray-600"
+              >
+                {m.type === 'linear' ? (
+                  <span>Distance {i + 1}: {m.value} {measurementUnit}</span>
+                ) : (
+                  <span>Area {i + 1}: {m.value} {measurementUnit}²</span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
+        <AiGuidancePanel
+          messages={guidanceMessages}
+          isLoading={isGuidanceLoading}
+          error={guidanceError}
+          onRefresh={handleRefreshGuidance}
+        />
       </div>
 
       {isSettingScale && (

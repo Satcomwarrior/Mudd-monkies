@@ -3,11 +3,12 @@
 /**
  * MCP Server for PDF Takeoff Tool
  * Provides tools for construction measurement and PDF analysis
- * 
+ *
  * This is a minimal scaffold implementing MCP (Model Context Protocol)
  * with a placeholder echo tool for development and testing.
  */
 
+import 'dotenv/config';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
@@ -15,6 +16,10 @@ import {
   ListToolsRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
+import {
+  runConstructGuidance,
+  type ConstructGuidanceArgs,
+} from './tools/constructGuidance.js';
 
 interface EchoArgs {
   message?: string;
@@ -54,6 +59,29 @@ const TOOLS: Tool[] = [
       required: ['message'],
     },
   },
+  {
+    name: 'construct_guidance',
+    description:
+      'Surface ConstructConnect recommendations using proprietary LLM artifacts and measurement context.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'Primary question or instruction for the ConstructConnect guidance model.',
+        },
+        projectId: {
+          type: 'string',
+          description: 'Optional identifier for the active project or opportunity.',
+        },
+        measurementSummary: {
+          type: 'string',
+          description: 'Summary of measurements or takeoff context gathered in the UI.',
+        },
+      },
+      required: ['prompt'],
+    },
+  },
   // TODO: Add more construction-specific tools:
   // - pdf_extract_measurements
   // - calculate_area
@@ -81,6 +109,33 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               type: 'text',
               text: `Echo: ${message || 'No message provided'}`,
             },
+          ],
+        };
+      }
+
+      case 'construct_guidance': {
+        const partialArgs = (args ?? {}) as Partial<ConstructGuidanceArgs>;
+        if (!partialArgs.prompt) {
+          throw new Error('construct_guidance requires a prompt argument');
+        }
+
+        const result = await runConstructGuidance({
+          prompt: partialArgs.prompt,
+          projectId: partialArgs.projectId,
+          measurementSummary: partialArgs.measurementSummary,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: result.message,
+            },
+            ...result.references.map((reference) => ({
+              type: 'text' as const,
+              text: `Reference: ${reference.name}${
+                reference.snippet ? `\n${reference.snippet}` : ''
+              }`,
+            })),
           ],
         };
       }

@@ -13,6 +13,7 @@ A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn
 - 📄 Multi-page PDF support
 - 💾 Page-specific measurements
 - 🤖 **Claude MCP Integration** - AI-powered measurement assistance
+- 🧠 ConstructConnect AI guidance surfaced directly in the PDF viewer
 
 ## Tech Stack
 
@@ -107,6 +108,23 @@ npm run dev
 5. **View Results**:
    - Measurements are displayed in real-time on the drawing
    - A list of all measurements for the current page is shown below
+   - ConstructConnect AI recommendations appear alongside the measurement list
+
+### ConstructConnect AI Guidance Setup
+
+The AI guidance panel calls a ConstructConnect-compatible service that can leverage your proprietary LLM artifacts. Configure the following environment variables in a `.env.local` file at the project root before running `npm run dev`:
+
+```bash
+CONSTRUCTCONNECT_BASE_URL="https://your-ai-gateway.example.com"
+CONSTRUCTCONNECT_API_KEY="your-api-key"
+CONSTRUCTCONNECT_ARTIFACT_DIR="/absolute/path/to/CLAUDE_AI_ARTIFACTS"
+```
+
+- `CONSTRUCTCONNECT_BASE_URL` — Base URL of the REST endpoint that proxies requests to your ConstructConnect/LLM service.
+- `CONSTRUCTCONNECT_API_KEY` — Credential used to authenticate the API calls.
+- `CONSTRUCTCONNECT_ARTIFACT_DIR` — Directory containing the artifact bundle referenced by your model (e.g., `C:\Users\Muddm\Downloads\CLAUDE_AI_ARTIFACTS`).
+
+When a PDF is opened or a measurement is captured, the frontend calls `/api/guidance`, which relays the context to your service and streams the responses into the guidance panel.
 
 ## MCP Server Integration
 
@@ -117,6 +135,7 @@ This project includes a complete **Model Context Protocol (MCP)** server that en
 ### MCP Server Features
 
 - ✅ **Echo Tool**: Basic connectivity testing
+- ✅ **construct_guidance Tool**: Routes prompts and measurement context to your ConstructConnect-compatible LLM runner using the artifact bundle
 - 🚧 **PDF Analysis Tools**: Extract measurements and validate blueprints (coming soon)
 - 🚧 **Construction Calculations**: Area calculations and material estimations (coming soon)
 - 🚧 **Blueprint Validation**: Automated quality checks (coming soon)
@@ -195,7 +214,22 @@ npm start
 
 **Available Tools**:
 - `echo`: Test tool that echoes back messages
+- `construct_guidance`: Supplies project context to your proprietary LLM and returns ConstructConnect-style recommendations
 - More tools coming soon for PDF analysis and construction calculations
+
+### MCP Environment
+
+Copy `.env.example` to `.env` (or create a new `.env`) inside `mcp-server/` and set:
+
+```bash
+CLAUDE_AI_ARTIFACTS_PATH="/absolute/path/to/CLAUDE_AI_ARTIFACTS"
+CONSTRUCTCONNECT_MODEL_ENDPOINT="https://your-ai-gateway.example.com/guidance"
+CONSTRUCTCONNECT_MODEL_API_KEY="your-api-key"
+```
+
+- `CLAUDE_AI_ARTIFACTS_PATH` should match the location of the artifact bundle Claude must reference.
+- `CONSTRUCTCONNECT_MODEL_ENDPOINT` points at the executable or HTTP endpoint that executes your proprietary model.
+- `CONSTRUCTCONNECT_MODEL_API_KEY` is forwarded as an authorization header when present.
 
 ### Extending the MCP Server
 
