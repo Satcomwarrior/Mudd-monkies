@@ -1,5 +1,21 @@
 # Enterprise Construction Blueprint Takeoff Automation Tool: Complete Technical Research Report
 
+## Table of Contents
+
+- [Executive Summary](#executive-summary)
+- [Critical Finding: Budibase Repository Status](#critical-finding-budibase-repository-status)
+- [Hugging Face AI Models for Blueprint Analysis](#hugging-face-ai-models-for-blueprint-analysis)
+- [Point Snapping and Intersection Detection](#point-snapping-and-intersection-detection)
+- [Open-Source Construction Takeoff Tools Analysis](#open-source-construction-takeoff-tools-analysis)
+- [Computer Vision Pipeline for Blueprint Processing](#computer-vision-pipeline-for-blueprint-processing)
+- [PDF and Image Processing Implementation](#pdf-and-image-processing-implementation)
+- [Enterprise Architecture and Production Deployment](#enterprise-architecture-and-production-deployment)
+- [Complete Implementation Roadmap](#complete-implementation-roadmap)
+- [Critical Library Recommendations](#critical-library-recommendations)
+- [Key Research Papers and Resources](#key-research-papers-and-resources)
+- [Architectural Best Practices Summary](#architectural-best-practices-summary)
+- [Conclusion and Next Steps](#conclusion-and-next-steps)
+
 ## Executive Summary
 
 **The Budibase repository you referenced does not exist publicly.** However, this research provides a complete technical blueprint for building an enterprise-quality construction takeoff automation tool using modern Python, computer vision, and web technologies. This report synthesizes findings from analyzing Hugging Face AI models, open-source takeoff tools, CAD algorithms, and production architecture patterns to deliver actionable guidance.
