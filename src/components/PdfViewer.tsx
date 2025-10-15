@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select';
 import { usePdfHandler } from '@/hooks/usePdfHandler';
 import { MeasurementUnit, Point } from '@/types/pdf';
-import { Ruler, Move } from 'lucide-react';
+import { Ruler, Move, Trash2, Undo2, Eraser } from 'lucide-react';
 import { AiGuidancePanel } from '@/components/AiGuidancePanel';
 import type { ConstructGuidanceMessage } from '@/types/guidance';
 
@@ -39,6 +39,7 @@ export function PdfViewer() {
     setIsSettingScale,
     scaleReference,
     setScaleReference,
+    pixelsPerUnit,
     setPixelsPerUnit,
     actualLength,
     setActualLength,
@@ -61,10 +62,38 @@ export function PdfViewer() {
     guidanceHistoryRef.current = guidanceMessages;
   }, [guidanceMessages]);
 
-  const measurementCount = useMemo(
-    () => (measurements[currentPage] || []).length,
+  const pageMeasurements = useMemo(
+    () => measurements[currentPage] || [],
     [measurements, currentPage]
   );
+
+  const measurementCount = pageMeasurements.length;
+
+  const { totalLinear, totalArea } = useMemo(() => {
+    return pageMeasurements.reduce(
+      (totals, measurement) => {
+        if (!Number.isFinite(measurement.value)) {
+          return totals;
+        }
+
+        if (measurement.type === 'linear') {
+          totals.totalLinear += measurement.value;
+        } else if (measurement.type === 'area') {
+          totals.totalArea += measurement.value;
+        }
+
+        return totals;
+      },
+      { totalLinear: 0, totalArea: 0 }
+    );
+  }, [pageMeasurements]);
+
+  const isScaleCalibrated = useMemo(() => Boolean(pixelsPerUnit), [pixelsPerUnit]);
+
+  const isActualLengthValid = useMemo(() => {
+    const parsed = parseFloat(actualLength);
+    return !Number.isNaN(parsed) && parsed > 0;
+  }, [actualLength]);
 
   const requestGuidance = useCallback(
     async (
@@ -147,8 +176,71 @@ export function PdfViewer() {
       setGuidanceMessages([]);
       setGuidanceError(null);
       loadPdf(file);
+      setPixelsPerUnit(null);
+      setScaleReference(null);
+      setIsSettingScale(false);
+      setMeasureStart(null);
+      setAreaPoints([]);
+      setCurrentMeasurement([]);
+      setActualLength('');
     }
   };
+
+  const handleRemoveMeasurement = useCallback(
+    (measurementId: string) => {
+      setMeasurements((prev) => {
+        const currentPageMeasurements = prev[currentPage] || [];
+        const updatedPageMeasurements = currentPageMeasurements.filter(
+          (measurement) => measurement.id !== measurementId
+        );
+
+        if (updatedPageMeasurements.length === currentPageMeasurements.length) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [currentPage]: updatedPageMeasurements,
+        };
+      });
+    },
+    [currentPage, setMeasurements]
+  );
+
+  const handleUndoMeasurement = useCallback(() => {
+    setMeasurements((prev) => {
+      const currentPageMeasurements = prev[currentPage] || [];
+      if (currentPageMeasurements.length === 0) {
+        return prev;
+      }
+
+      const updatedPageMeasurements = currentPageMeasurements.slice(0, -1);
+      return {
+        ...prev,
+        [currentPage]: updatedPageMeasurements,
+      };
+    });
+    setMeasureStart(null);
+    setAreaPoints([]);
+    setCurrentMeasurement([]);
+  }, [currentPage, setMeasurements, setMeasureStart, setAreaPoints, setCurrentMeasurement]);
+
+  const handleClearCurrentPage = useCallback(() => {
+    setMeasurements((prev) => {
+      const currentPageMeasurements = prev[currentPage] || [];
+      if (currentPageMeasurements.length === 0) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [currentPage]: [],
+      };
+    });
+    setMeasureStart(null);
+    setAreaPoints([]);
+    setCurrentMeasurement([]);
+  }, [currentPage, setMeasurements, setMeasureStart, setAreaPoints, setCurrentMeasurement]);
 
   const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
     if (!annotationCanvasRef.current) return;
@@ -186,12 +278,12 @@ export function PdfViewer() {
           value: parseFloat(calculateDistance([measureStart, point]) || '0')
         };
 
-        setMeasurements({
-          ...measurements,
-          [currentPage]: [
-            ...(measurements[currentPage] || []),
-            newMeasurement
-          ]
+        setMeasurements((prev) => {
+          const currentPageMeasurements = prev[currentPage] || [];
+          return {
+            ...prev,
+            [currentPage]: [...currentPageMeasurements, newMeasurement],
+          };
         });
         setMeasureStart(null);
         setCurrentMeasurement([]);
@@ -214,12 +306,12 @@ export function PdfViewer() {
           value: parseFloat(calculateArea(areaPoints) || '0')
         };
 
-        setMeasurements({
-          ...measurements,
-          [currentPage]: [
-            ...(measurements[currentPage] || []),
-            newMeasurement
-          ]
+        setMeasurements((prev) => {
+          const currentPageMeasurements = prev[currentPage] || [];
+          return {
+            ...prev,
+            [currentPage]: [...currentPageMeasurements, newMeasurement],
+          };
         });
         setAreaPoints([]);
         setCurrentMeasurement([]);
@@ -295,14 +387,14 @@ export function PdfViewer() {
           </Select>
           <Button
             onClick={() => setIsSettingScale(true)}
-            disabled={!actualLength}
+            disabled={!isActualLengthValid}
             variant={isSettingScale ? "secondary" : "outline"}
           >
             Set Scale
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             onClick={() => setTool('measure')}
             variant={tool === 'measure' ? "default" : "outline"}
@@ -318,15 +410,20 @@ export function PdfViewer() {
             Area
           </Button>
           <Button
-            onClick={() => {
-              setMeasurements({});
-              setMeasureStart(null);
-              setAreaPoints([]);
-              setCurrentMeasurement([]);
-            }}
-            variant="destructive"
+            onClick={handleUndoMeasurement}
+            variant="outline"
+            disabled={pageMeasurements.length === 0}
           >
-            Clear All
+            <Undo2 className="w-4 h-4 mr-2" />
+            Undo Last
+          </Button>
+          <Button
+            onClick={handleClearCurrentPage}
+            variant="destructive"
+            disabled={pageMeasurements.length === 0}
+          >
+            <Eraser className="w-4 h-4 mr-2" />
+            Clear Page
           </Button>
         </div>
 
@@ -368,18 +465,61 @@ export function PdfViewer() {
 
       <div className="w-full flex flex-col lg:flex-row gap-4">
         <div className="flex-1 bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Measurements (Page {currentPage})</h3>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <h3 className="text-lg font-semibold">Measurements (Page {currentPage})</h3>
+            <div className="flex flex-wrap gap-2 text-xs sm:text-sm text-gray-600">
+              <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1">
+                <span className="font-semibold">{measurementCount}</span>
+                <span>records</span>
+              </div>
+              <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1">
+                <span className="font-semibold">{totalLinear.toFixed(2)}</span>
+                <span>{measurementUnit}</span>
+              </div>
+              <div className="flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-1">
+                <span className="font-semibold">{totalArea.toFixed(2)}</span>
+                <span>{measurementUnit}²</span>
+              </div>
+            </div>
+          </div>
+          {!pdf && (
+            <p className="rounded-md border border-dashed border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+              Upload a PDF blueprint above to start measuring distances and areas.
+            </p>
+          )}
+          {pdf && !isScaleCalibrated && (
+            <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 mb-3">
+              Set the scale by entering a known length and selecting two points on the drawing to unlock accurate measurements.
+            </p>
+          )}
+          {pageMeasurements.length === 0 && pdf && (
+            <p className="rounded-md border border-gray-200 bg-gray-50 p-3 text-sm text-gray-600">
+              Select the Measure or Area tool, then click on the drawing to capture your first measurement.
+            </p>
+          )}
           <div className="space-y-2">
-            {(measurements[currentPage] || []).map((m, i) => (
+            {pageMeasurements.map((m, i) => (
               <div
                 key={m.id}
-                className="p-2 border-b border-gray-100 last:border-0 text-sm text-gray-600"
+                className="flex items-center justify-between rounded-md border border-gray-200 bg-gray-50 p-2 text-sm text-gray-700"
               >
-                {m.type === 'linear' ? (
-                  <span>Distance {i + 1}: {m.value} {measurementUnit}</span>
-                ) : (
-                  <span>Area {i + 1}: {m.value} {measurementUnit}²</span>
-                )}
+                <div className="flex flex-col">
+                  <span className="font-semibold">
+                    {m.type === 'linear' ? `Distance ${i + 1}` : `Area ${i + 1}`}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {m.value.toFixed(2)} {measurementUnit}
+                    {m.type === 'area' ? '²' : ''}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove ${m.type} measurement ${i + 1}`}
+                  onClick={() => handleRemoveMeasurement(m.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             ))}
           </div>
