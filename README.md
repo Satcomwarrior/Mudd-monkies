@@ -12,6 +12,7 @@ A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn
 - 🎨 Modern UI with shadcn/ui components
 - 📄 Multi-page PDF support
 - 💾 Page-specific measurements
+- 🧠 ConstructConnect AI guidance panel for contextual insights
 - 🤖 **Claude MCP Integration** - AI-powered measurement assistance
 
 ## Tech Stack
@@ -107,6 +108,34 @@ npm run dev
 5. **View Results**:
    - Measurements are displayed in real-time on the drawing
    - A list of all measurements for the current page is shown below
+
+### AI Guidance Panel
+
+The AI panel surfaces ConstructConnect insights as you work:
+
+- When a PDF is opened, the app calls `/api/guidance` to request an initial summary and review checklist.
+- Completing a linear or area measurement sends the latest context (page number, units, and measurement details) for follow-up recommendations.
+- The panel keeps a prompt history so you can review previous exchanges or retry prompts that returned an error.
+- Use the quick-action buttons or the prompt input to ask targeted questions about the takeoff or next steps.
+
+## ConstructConnect AI Guidance
+
+Configure the environment variables below (for local development place them in `.env.local`):
+
+| Variable | Required | Description |
+| --- | --- | --- |
+| `CONSTRUCTCONNECT_API_BASE_URL` | Yes* | Base URL for the ConstructConnect/LLM guidance service (e.g. `https://api.constructconnect.com/v1`). |
+| `CONSTRUCTCONNECT_API_KEY` | Yes* | API key used to authorize requests against the ConstructConnect service. |
+| `CONSTRUCTCONNECT_ARTIFACT_DIR` | Optional | Absolute path to a directory containing sample JSON artifacts (e.g. `guidance.json`, `projects.json`). Used when the hosted API is unavailable. |
+
+\*Either provide both `CONSTRUCTCONNECT_API_BASE_URL` and `CONSTRUCTCONNECT_API_KEY`, or supply `CONSTRUCTCONNECT_ARTIFACT_DIR` with exported responses for offline demos.
+
+### API Route Reference
+
+- `POST /api/guidance` &mdash; accepts a JSON body with `prompt`, optional `context`, and `history` (an array of prompt/response turns). Returns structured guidance for the UI.
+- `GET /api/guidance?query=...` &mdash; proxies project search queries to ConstructConnect (or the local artifact bundle) for auto-complete experiences.
+
+The helper functions in `src/lib/constructConnect.ts` automatically forward the configured environment variables and gracefully surface errors to the UI.
 
 ## MCP Server Integration
 
