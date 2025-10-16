@@ -1,14 +1,16 @@
 # blueprint_parser.py
 
-import fitz  # PyMuPDF
-import numpy as np
-import yaml
+import argparse
 import json
 import logging
-import argparse
 from pathlib import Path
+from typing import Any, Dict, List, Tuple
+
+import fitz  # PyMuPDF
+import numpy as np
+import torch
+import yaml
 from scipy.spatial import KDTree
-from typing import List, Dict, Any, Tuple
 
 # --- Configure Logging ---
 logging.basicConfig(
@@ -25,6 +27,89 @@ class PDFParsingError(Exception):
 class ConfigurationError(Exception):
     """Custom exception for errors in the configuration file."""
     pass
+
+class QuantumLayoutOptimizer:
+    """Run a quantum-inspired walk over the fixture graph to rank layouts."""
+
+    def __init__(self, settings: Dict[str, Any]):
+        quantum_settings = settings.get("quantum_settings", {})
+        self.dt = float(quantum_settings.get("time_step", 0.05))
+        self.steps = int(quantum_settings.get("steps", 128))
+        self.bias = float(quantum_settings.get("placement_bias", 1.0))
+        self.max_states = int(quantum_settings.get("samples", 10))
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    def _build_hamiltonian(
+        self,
+        nodes: List[Dict[str, Any]],
+        edges: List[Tuple[int, int]],
+        costs: List[float],
+        harmonies: Dict[str, float],
+    ) -> torch.Tensor:
+        n_nodes = len(nodes)
+        hamiltonian = torch.zeros((n_nodes, n_nodes), dtype=torch.cdouble, device=self.device)
+
+        # Base costs sit on the diagonal of the Hamiltonian.
+        for idx, cost in enumerate(costs):
+            hamiltonian[idx, idx] = complex(cost, 0.0)
+
+        # Couplings capture local harmony/dissonance between fixtures.
+        for i, j in edges:
+            harmony_key = f"{i}-{j}"
+            harmony = harmonies.get(harmony_key, 0.0)
+
+            # Negative harmony rewards proximity, positive harmony penalises it.
+            coupling = -abs(harmony) if harmony < 0 else harmony + self.bias
+            hamiltonian[i, j] = complex(coupling, 0.0)
+            hamiltonian[j, i] = complex(coupling, 0.0)
+
+        return hamiltonian
+
+    def _simulate(self, hamiltonian: torch.Tensor) -> torch.Tensor:
+        n_states = hamiltonian.size(0)
+        if n_states == 0:
+            return torch.empty(0, dtype=torch.cdouble, device=self.device)
+
+        psi = torch.ones(n_states, dtype=torch.cdouble, device=self.device)
+        psi /= torch.linalg.norm(psi)
+
+        evolution_operator = torch.linalg.matrix_exp(-1j * hamiltonian * self.dt)
+        for _ in range(self.steps):
+            psi = evolution_operator @ psi
+            psi /= torch.linalg.norm(psi)
+
+        return psi
+
+    def optimise(
+        self,
+        nodes: List[Dict[str, Any]],
+        edges: List[Tuple[int, int]],
+        costs: List[float],
+        harmonies: Dict[str, float],
+    ) -> Dict[str, Any]:
+        hamiltonian = self._build_hamiltonian(nodes, edges, costs, harmonies)
+        psi = self._simulate(hamiltonian)
+
+        if psi.numel() == 0:
+            return {"selected_nodes": [], "probabilities": []}
+
+        probabilities = torch.abs(psi) ** 2
+        count = min(self.max_states, probabilities.numel())
+        top_probabilities, top_indices = torch.topk(probabilities.real, count)
+
+        selections = [
+            {
+                "node": nodes[idx],
+                "probability": float(prob),
+            }
+            for idx, prob in zip(top_indices.tolist(), top_probabilities.tolist())
+        ]
+
+        return {
+            "selected_nodes": selections,
+            "probabilities": probabilities.real.tolist(),
+        }
+
 
 class BlueprintParser:
     """
@@ -147,7 +232,19 @@ class BlueprintParser:
         fixture_nodes = self._identify_fixtures(raw_shapes)
         graph_data = self._weave_graph(fixture_nodes)
         logging.info("Blueprint processing completed successfully.")
-        return graph_data
+
+        optimiser = QuantumLayoutOptimizer(self.settings)
+        optimisation = optimiser.optimise(
+            graph_data["nodes"],
+            graph_data["edges"],
+            graph_data["costs"],
+            graph_data["harmonies"],
+        )
+
+        return {
+            "graph": graph_data,
+            "quantum_solution": optimisation,
+        }
 
 def main():
     """Main function to run the CLI tool."""

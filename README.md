@@ -142,6 +142,42 @@ If remote access is disabled and no artifact directory is supplied, the emulator
 
 The helper functions in `src/lib/constructConnect.ts` automatically forward the configured environment variables and gracefully surface errors to the UI.
 
+## Blueprint Graph Parser CLI
+
+The repository ships with `blueprint_parser.py`, a command-line utility that converts vector PDFs into fixture graphs and then applies a **quantum-inspired layout optimiser**. The optimiser simulates a wavefunction over the fixture graph using PyTorch's complex tensor support (`torch.linalg.matrix_exp`), allowing you to explore globally optimal fixture placements without the hype of actual quantum hardware.
+
+### Running the Parser
+
+```bash
+python blueprint_parser.py \
+  --input my_blueprint.pdf \
+  --output output_graph.json \
+  --config config.yaml \
+  --page 0
+```
+
+- `--input`: Source PDF containing the vector blueprint data.
+- `--output`: Destination JSON file storing the parsed graph and optimised selections.
+- `--config`: YAML configuration controlling symbol detection, harmony rules, and quantum walk parameters.
+- `--page`: Zero-indexed PDF page to analyse (defaults to `0`).
+
+Install dependencies with:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### Understanding the Output
+
+The saved JSON contains two top-level keys:
+
+- `graph`: All detected fixtures, proximity edges, and harmony weights derived from `config.yaml`.
+- `quantum_solution`: Ranked fixture selections sampled from the simulated wavefunction along with their probabilities.
+
+Tune the `parser_settings.quantum_settings` block in `config.yaml` to control the timestep, number of simulation steps, and how many high-probability placements are surfaced.
+
 ## MCP Server Integration
 
 ### Overview

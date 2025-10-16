@@ -45,3 +45,14 @@ parser_settings:
       type2: vent_small
       weight: 0.5 # Slightly discourage sockets from being right next to vents.
 
+  # --- Quantum walk controls ---
+  quantum_settings:
+    # Size of the timestep used when evolving the wavefunction.
+    time_step: 0.05
+    # Number of time steps to evolve the state vector.
+    steps: 128
+    # Scalar nudging high-energy placements upwards.
+    placement_bias: 1.0
+    # Number of high-probability fixture states to surface in the output.
+    samples: 10
+

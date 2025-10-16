@@ -3,3 +3,4 @@ PyMuPDF
 numpy
 PyYAML
 scipy
+torch
