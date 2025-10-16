@@ -213,10 +213,10 @@ class QuantumBlueprintOptimizer:
             device=self.device,
         )
 
-        evolution_operator = torch.linalg.matrix_exp(-1j * hamiltonian * self.dt)
+        U = torch.linalg.matrix_exp(-1j * hamiltonian * self.dt)
 
         for _ in range(self.time_steps):
-            psi = evolution_operator @ psi
+            psi = U @ psi
             norm = torch.linalg.norm(psi)
             if torch.isnan(norm) or norm == 0:
                 raise FloatingPointError("Wavefunction collapsed to an invalid state")

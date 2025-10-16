@@ -318,8 +318,22 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 The `python/quantum_blueprint_optimizer.py` module is a classical solver that borrows the maths of continuous-time quantum walks. It is not a quantum computer, but it does simulate a complex-valued wavefunction so the optimiser can examine many layout permutations at once without getting trapped in a greedy corner case.
 
-- **What actually happens** – The solver builds a Hamiltonian matrix where low energy corresponds to desirable fixture relationships. At each step it evolves a complex state vector `psi` with the textbook update `U = torch.linalg.matrix_exp(-1j * H * dt)` and renormalises the result. This is straight from the Schrödinger equation and runs efficiently on a GPU such as an RTX 3070.
-- **Why bother** – Greedy heuristics settle for the first locally convenient placement. Brute force enumerates astronomically many combinations. The simulated quantum walk keeps a global view of the blueprint, allowing the probability wave to reinforce globally consistent solutions instead of getting stuck.
-- **What you get back** – After evolution the algorithm samples the highest-probability fixtures, returning both the probabilities and the raw wavefunction so you can audit or post-process the result. There is no marketing smoke: you can inspect the Hamiltonian, probabilities, and selected node IDs directly.
+### What "quantum-inspired" actually means
 
-This section exists so engineers can evaluate the approach without hype. If the model does not deliver, you can adjust the Hamiltonian weights, add explicit penalties or preferences, or swap in a different optimiser entirely.
+- **Still classical hardware.** Everything runs on CPUs or GPUs, but the maths mirrors textbook quantum mechanics. The solver constructs a Hamiltonian matrix `H`, evolves a complex-valued state vector `psi`, and keeps the amplitudes normalised—exactly what you would do when integrating the Schrödinger equation.
+- **A real simulation, not branding.** The update step is literally `U = torch.linalg.matrix_exp(-1j * H * dt)` followed by `psi = U @ psi`. That `U` operator is the continuous-time quantum walk evolution operator; PyTorch handles the heavy matrix exponential so the algorithm can explore thousands of layout possibilities in superposition before sampling a result.
+- **Purpose built for optimisation.** The Hamiltonian encodes "badness": incompatible fixtures, low veil factors, or user penalties raise the energy. The walk drifts toward low-energy (high-quality) configurations across the entire blueprint simultaneously rather than stepping through placements one at a time.
+
+### Why this is different from "everyday" algorithms
+
+- **Greedy placement falls short.** A conventional greedy strategy drops fixtures in the nearest cheap spot and immediately commits to that choice. Once an early placement is wrong the whole layout collapses.
+- **Brute force is intractable.** Enumerating every layout for even 60 fixtures exceeds the number of atoms in the known universe. No amount of simple looping gets you an answer in time.
+- **Quantum walk keeps the global picture.** Because the probability wave spans the whole graph, harmony rules reinforce compatible pairings while dissonance damps conflicts. Sampling the wavefunction after evolution produces globally consistent sectors instead of local dead-ends.
+
+### What engineers can inspect
+
+- **Hamiltonian matrix.** Every compatibility, veil, and preference shows up explicitly so you can audit the energy landscape.
+- **Wavefunction (`psi`).** Returned alongside the selected fixtures for downstream tooling or sanity checks.
+- **Probabilities and selections.** The optimiser surfaces both the raw probabilities per node and the chosen IDs, making it easy to compare against domain expectations.
+
+If the model does not deliver acceptable layouts, you can adjust the Hamiltonian weights, introduce extra penalties or preferences, or even swap the solver out entirely—the surrounding pipeline remains agnostic.
