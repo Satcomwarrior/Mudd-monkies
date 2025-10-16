@@ -147,7 +147,13 @@ export function PdfViewer() {
           try {
             parsed = JSON.parse(responseText);
           } catch (jsonError) {
-            parsed = { error: responseText, details: String(jsonError) };
+            parsed = {
+              error: responseText,
+              details: {
+                message: jsonError instanceof Error ? jsonError.message : String(jsonError),
+                stack: jsonError instanceof Error ? jsonError.stack : undefined,
+              },
+            };
           }
         }
 
