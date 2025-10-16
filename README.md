@@ -14,6 +14,7 @@ A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn
 - 💾 Page-specific measurements
 - 🤖 **Claude MCP Integration** - AI-powered measurement assistance
 - 🧠 ConstructConnect AI guidance surfaced directly in the PDF viewer
+- 📊 Algorithmic insight cards summarising totals, variance, and scale status for the active page
 
 ## Tech Stack
 
@@ -108,7 +109,7 @@ npm run dev
 5. **View Results**:
    - Measurements are displayed in real-time on the drawing
    - A list of all measurements for the current page is shown below
-   - ConstructConnect AI recommendations appear alongside the measurement list
+   - Algorithmic insight cards summarise totals and variability before ConstructConnect AI recommendations
 
 ### ConstructConnect AI Guidance Setup
 

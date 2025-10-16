@@ -21,6 +21,11 @@ import { MeasurementUnit, Point } from '@/types/pdf';
 import { Ruler, Move, Trash2, Undo2, Eraser } from 'lucide-react';
 import { AiGuidancePanel } from '@/components/AiGuidancePanel';
 import type { ConstructGuidanceMessage } from '@/types/guidance';
+import {
+  buildAlgorithmInsights,
+  insightsToPayload,
+  type AlgorithmicInsightPayloadItem,
+} from '@/lib/measurementInsights';
 
 export function PdfViewer() {
   const {
@@ -90,6 +95,21 @@ export function PdfViewer() {
 
   const isScaleCalibrated = useMemo(() => Boolean(pixelsPerUnit), [pixelsPerUnit]);
 
+  const measurementInsights = useMemo(
+    () =>
+      buildAlgorithmInsights({
+        measurements: pageMeasurements,
+        unit: measurementUnit,
+        isScaleCalibrated,
+      }),
+    [pageMeasurements, measurementUnit, isScaleCalibrated]
+  );
+
+  const measurementInsightsPayload = useMemo(
+    () => insightsToPayload(measurementInsights),
+    [measurementInsights]
+  );
+
   const isActualLengthValid = useMemo(() => {
     const parsed = parseFloat(actualLength);
     return !Number.isNaN(parsed) && parsed > 0;
@@ -98,7 +118,8 @@ export function PdfViewer() {
   const requestGuidance = useCallback(
     async (
       event: 'pdf_opened' | 'measurement_completed' | 'custom_prompt',
-      payload: Record<string, unknown>
+      payload: Record<string, unknown>,
+      overrideInsights?: AlgorithmicInsightPayloadItem[]
     ) => {
       if (!pdf) return;
 
@@ -111,7 +132,10 @@ export function PdfViewer() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             event,
-            payload,
+            payload: {
+              ...payload,
+              algorithmicInsights: overrideInsights ?? measurementInsightsPayload,
+            },
             history: guidanceHistoryRef.current,
           }),
         });
@@ -157,7 +181,7 @@ export function PdfViewer() {
         setIsGuidanceLoading(false);
       }
     },
-    [pdf]
+    [pdf, measurementInsightsPayload]
   );
 
   const handleRefreshGuidance = useCallback(() => {
@@ -278,6 +302,15 @@ export function PdfViewer() {
           value: parseFloat(calculateDistance([measureStart, point]) || '0')
         };
 
+        const nextPageMeasurements = [...pageMeasurements, newMeasurement];
+        const nextInsights = insightsToPayload(
+          buildAlgorithmInsights({
+            measurements: nextPageMeasurements,
+            unit: measurementUnit,
+            isScaleCalibrated,
+          })
+        );
+
         setMeasurements((prev) => {
           const currentPageMeasurements = prev[currentPage] || [];
           return {
@@ -291,7 +324,7 @@ export function PdfViewer() {
           page: currentPage,
           measurement: newMeasurement,
           unit: measurementUnit,
-        });
+        }, nextInsights);
       }
     } else if (tool === 'area') {
       if (
@@ -306,6 +339,15 @@ export function PdfViewer() {
           value: parseFloat(calculateArea(areaPoints) || '0')
         };
 
+        const nextPageMeasurements = [...pageMeasurements, newMeasurement];
+        const nextInsights = insightsToPayload(
+          buildAlgorithmInsights({
+            measurements: nextPageMeasurements,
+            unit: measurementUnit,
+            isScaleCalibrated,
+          })
+        );
+
         setMeasurements((prev) => {
           const currentPageMeasurements = prev[currentPage] || [];
           return {
@@ -319,7 +361,7 @@ export function PdfViewer() {
           page: currentPage,
           measurement: newMeasurement,
           unit: measurementUnit,
-        });
+        }, nextInsights);
       } else {
         const newPoints = [...areaPoints, point];
         setAreaPoints(newPoints);
@@ -529,6 +571,7 @@ export function PdfViewer() {
           isLoading={isGuidanceLoading}
           error={guidanceError}
           onRefresh={handleRefreshGuidance}
+          insights={measurementInsights}
         />
       </div>
 
