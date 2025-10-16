@@ -35,7 +35,7 @@ const defaultQuickActions: GuidanceAction[] = [
 
 const roleLabel: Record<PromptExchange['role'], string> = {
   user: 'You',
-  assistant: 'ConstructConnect AI',
+  assistant: 'Mudd Guidance Studio',
   system: 'System'
 };
 
@@ -180,7 +180,7 @@ export function AiGuidancePanel({
           onClick={() => void handleSubmit()}
           disabled={isLoading || !promptDraft.trim()}
         >
-          {isLoading ? 'Thinking…' : 'Send to ConstructConnect AI'}
+          {isLoading ? 'Thinking…' : 'Send to Mudd Guidance Studio'}
         </Button>
       </footer>
     </aside>
