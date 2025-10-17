@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mudd-monkies-web
+  labels:
+    app: mudd-monkies-web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mudd-monkies-web
+  template:
+    metadata:
+      labels:
+        app: mudd-monkies-web
+    spec:
+      containers:
+        - name: web
+          image: mudd-monkies-web
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30

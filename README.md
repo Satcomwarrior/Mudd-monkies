@@ -48,8 +48,9 @@ A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
+- [Skaffold](https://skaffold.dev/) (optional, for local Kubernetes development)
 - Claude Desktop (for MCP integration)
 
 ### Installation
@@ -85,6 +86,16 @@ npm run dev
 ```
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Running with Skaffold
+
+To iterate using a local Kubernetes cluster (such as [minikube](https://minikube.sigs.k8s.io/docs/) or [kind](https://kind.sigs.k8s.io/)), the repository now ships with a Skaffold configuration. This will build the Next.js image, deploy it to the cluster, and port-forward traffic back to your machine.
+
+```bash
+skaffold dev
+```
+
+Once the deployment is ready, Skaffold forwards `localhost:3000` to the in-cluster service so you can interact with the app as usual.
 
 ## Usage
 
