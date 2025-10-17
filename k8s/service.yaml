@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mudd-monkies-web
+  labels:
+    app: mudd-monkies-web
+spec:
+  type: ClusterIP
+  selector:
+    app: mudd-monkies-web
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
