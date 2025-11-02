@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { PageMeasurements, Point, MeasurementUnit, Tool } from '@/types/pdf';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -55,7 +55,8 @@ export const usePdfHandler = () => {
     context.clearRect(0, 0, canvas.width, canvas.height);
     await page.render({
       canvasContext: context,
-      viewport: viewport
+      viewport: viewport,
+      canvas: canvas
     }).promise;
   }, [pdf, currentPage, scale]);
 
