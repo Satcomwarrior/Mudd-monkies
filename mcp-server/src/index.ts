@@ -14,10 +14,27 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
+  Request,
+  Response,
 } from '@modelcontextprotocol/sdk/types.js';
+import fs from 'fs/promises';
+import { PDFParse } from 'pdf-parse';
 
 interface EchoArgs {
   message?: string;
+}
+
+interface PdfExtractTextArgs {
+  filePath: string;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface CalculateAreaArgs {
+  points: Point[];
 }
 
 /**
@@ -54,11 +71,41 @@ const TOOLS: Tool[] = [
       required: ['message'],
     },
   },
-  // TODO: Add more construction-specific tools:
-  // - pdf_extract_measurements
-  // - calculate_area
-  // - estimate_materials
-  // - validate_blueprint
+  {
+    name: 'pdf_extract_text',
+    description: 'Extract text content from a PDF file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description: 'The absolute path to the PDF file',
+        },
+      },
+      required: ['filePath'],
+    },
+  },
+  {
+    name: 'calculate_area',
+    description: 'Calculate the area of a polygon given a list of points',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        points: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              x: { type: 'number' },
+              y: { type: 'number' },
+            },
+            required: ['x', 'y'],
+          },
+        },
+      },
+      required: ['points'],
+    },
+  },
 ];
 
 /**
@@ -68,13 +115,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools: TOOLS };
 });
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+export const callToolHandler = async (
+  request: Request<typeof CallToolRequestSchema>
+): Promise<Response<typeof CallToolRequestSchema>> => {
   const { name, arguments: args } = request.params;
 
   try {
     switch (name) {
       case 'echo': {
-        const { message } = args as EchoArgs;
+        const { message } = args as unknown as EchoArgs;
         return {
           content: [
             {
@@ -82,6 +131,64 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               text: `Echo: ${message || 'No message provided'}`,
             },
           ],
+        };
+      }
+
+      case 'pdf_extract_text': {
+        const { filePath } = args as unknown as PdfExtractTextArgs;
+        try {
+          const dataBuffer = await fs.readFile(filePath);
+          const uint8Array = new Uint8Array(dataBuffer);
+          const parser = new PDFParse(uint8Array);
+          const data = await parser.getText();
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Extracted text from ${filePath}:\n\n${data.text}`,
+              },
+            ],
+          };
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'An unknown error occurred';
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error processing PDF file at ${filePath}: ${errorMessage}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      }
+
+      case 'calculate_area': {
+        const { points } = args as unknown as CalculateAreaArgs;
+        if (points.length < 3) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: 'At least 3 points are required to calculate an area.',
+              },
+            ],
+            isError: true,
+          };
+        }
+
+        let area = 0;
+        for (let i = 0; i < points.length; i++) {
+          const j = (i + 1) % points.length;
+          area += points[i].x * points[j].y;
+          area -= points[j].x * points[i].y;
+        }
+
+        area = Math.abs(area) / 2;
+
+        return {
+          content: [{ type: 'text', text: `The calculated area is: ${area}` }],
         };
       }
 
@@ -93,13 +200,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       content: [
         {
           type: 'text',
-          text: `Error executing tool ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          text: `Error executing tool ${name}: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }`,
         },
       ],
       isError: true,
     };
   }
-});
+};
+
+server.setRequestHandler(CallToolRequestSchema, callToolHandler);
+
 
 /**
  * Start the server

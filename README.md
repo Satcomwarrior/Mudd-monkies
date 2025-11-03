@@ -135,10 +135,12 @@ The `Service` publishes the application on port `80`, while the `Deployment` def
    - Use the "Area" tool for area measurements
    - Click points on the drawing to create measurements
    - For areas, click near the starting point to complete the shape
-4. **Navigate Pages**:
+4. **Extract Text**:
+    - Click the "Extract Text" button to extract all text from the PDF.
+5. **Navigate Pages**:
    - Use "Previous" and "Next" buttons to move between PDF pages
    - Measurements are saved per page
-5. **View Results**:
+6. **View Results**:
    - Measurements are displayed in real-time on the drawing
    - A list of all measurements for the current page is shown below
 
@@ -151,8 +153,8 @@ This project includes a complete **Model Context Protocol (MCP)** server that en
 ### MCP Server Features
 
 - ✅ **Echo Tool**: Basic connectivity testing
-- 🚧 **PDF Analysis Tools**: Extract measurements and validate blueprints (coming soon)
-- 🚧 **Construction Calculations**: Area calculations and material estimations (coming soon)
+- ✅ **PDF Analysis Tools**: Extract text from PDF files.
+- ✅ **Construction Calculations**: Calculate the area of a polygon.
 - 🚧 **Blueprint Validation**: Automated quality checks (coming soon)
 
 ### Setting Up Claude MCP Integration
@@ -229,7 +231,8 @@ npm start
 
 **Available Tools**:
 - `echo`: Test tool that echoes back messages
-- More tools coming soon for PDF analysis and construction calculations
+- `pdf_extract_text`: Extracts all text from a given PDF file.
+- `calculate_area`: Calculates the area of a polygon given a list of points.
 
 ### Extending the MCP Server
 
@@ -269,7 +272,7 @@ The MCP server runs locally and connects to Claude Desktop. No separate deployme
 
 🎉 **This repository is fully configured for Claude integration!**
 
-- ✅ MCP server scaffold implemented
+- ✅ MCP server with `echo`, `pdf_extract_text`, and `calculate_area` tools.
 - ✅ Echo tool for testing connectivity
 - ✅ TypeScript configuration
 - ✅ Build system ready

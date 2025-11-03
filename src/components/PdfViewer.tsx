@@ -1,4 +1,4 @@
-import { ChangeEvent, MouseEvent } from 'react';
+import { ChangeEvent, MouseEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,6 +13,9 @@ import { MeasurementUnit, Point } from '@/types/pdf';
 import { Ruler, Move } from 'lucide-react';
 
 export function PdfViewer() {
+  const [extractedText, setExtractedText] = useState<string>('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
   const {
     pdfCanvasRef,
     annotationCanvasRef,
@@ -45,7 +48,42 @@ export function PdfViewer() {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setUploadedFile(file);
       loadPdf(file);
+    }
+  };
+
+  const handleExtractText = async () => {
+    if (!uploadedFile) {
+      alert('Please upload a PDF file first.');
+      return;
+    }
+
+    const arrayBuffer = await uploadedFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+
+    const response = await fetch('/api/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: 'pdf_extract_text',
+        params: {
+          fileName: uploadedFile.name,
+          fileContent: base64,
+        },
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.error) {
+      setExtractedText(`Error: ${result.details}`);
+    } else if (result.result.isError) {
+      setExtractedText(`Error: ${result.result.content[0].text}`);
+    }
+    else {
+      setExtractedText(result.result.content[0].text);
     }
   };
 
@@ -231,7 +269,19 @@ export function PdfViewer() {
             </Button>
           </div>
         )}
+        <Button onClick={handleExtractText}>Extract Text</Button>
       </div>
+
+      {extractedText && (
+        <div className="w-full bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Extracted Text</h3>
+          <textarea
+            className="w-full h-40 p-2 border rounded"
+            value={extractedText}
+            readOnly
+          />
+        </div>
+      )}
 
       <div className="relative inline-block">
         <canvas
