@@ -16,4 +16,4 @@ export type PageMeasurements = {
 
 export type MeasurementUnit = 'ft' | 'm' | 'in';
 
-export type Tool = 'measure' | 'area'; 
+export type Tool = 'measure' | 'area';

@@ -33,7 +33,7 @@ spec:
             - name: NODE_ENV
               value: production
             - name: NEXT_TELEMETRY_DISABLED
-              value: "1"
+              value: '1'
           resources:
             requests:
               cpu: 100m
