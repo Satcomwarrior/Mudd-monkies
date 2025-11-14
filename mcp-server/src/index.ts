@@ -3,9 +3,6 @@
 /**
  * MCP Server for PDF Takeoff Tool
  * Provides tools for construction measurement and PDF analysis
- * 
- * This is a minimal scaffold implementing MCP (Model Context Protocol)
- * with a placeholder echo tool for development and testing.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -14,28 +11,8 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
-  Request,
-  Response,
 } from '@modelcontextprotocol/sdk/types.js';
-import fs from 'fs/promises';
-import { PDFParse } from 'pdf-parse';
-
-interface EchoArgs {
-  message?: string;
-}
-
-interface PdfExtractTextArgs {
-  filePath: string;
-}
-
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface CalculateAreaArgs {
-  points: Point[];
-}
+import { callToolHandler } from './tool-handler.js';
 
 /**
  * Create the MCP server instance
@@ -106,6 +83,20 @@ const TOOLS: Tool[] = [
       required: ['points'],
     },
   },
+  {
+    name: 'validate_blueprint',
+    description: 'Perform basic quality checks on a blueprint PDF',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description: 'The absolute path to the PDF file',
+        },
+      },
+      required: ['filePath'],
+    },
+  },
 ];
 
 /**
@@ -115,103 +106,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools: TOOLS };
 });
 
-export const callToolHandler = async (
-  request: Request<typeof CallToolRequestSchema>
-): Promise<Response<typeof CallToolRequestSchema>> => {
-  const { name, arguments: args } = request.params;
-
-  try {
-    switch (name) {
-      case 'echo': {
-        const { message } = args as unknown as EchoArgs;
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Echo: ${message || 'No message provided'}`,
-            },
-          ],
-        };
-      }
-
-      case 'pdf_extract_text': {
-        const { filePath } = args as unknown as PdfExtractTextArgs;
-        try {
-          const dataBuffer = await fs.readFile(filePath);
-          const uint8Array = new Uint8Array(dataBuffer);
-          const parser = new PDFParse(uint8Array);
-          const data = await parser.getText();
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Extracted text from ${filePath}:\n\n${data.text}`,
-              },
-            ],
-          };
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'An unknown error occurred';
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error processing PDF file at ${filePath}: ${errorMessage}`,
-              },
-            ],
-            isError: true,
-          };
-        }
-      }
-
-      case 'calculate_area': {
-        const { points } = args as unknown as CalculateAreaArgs;
-        if (points.length < 3) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'At least 3 points are required to calculate an area.',
-              },
-            ],
-            isError: true,
-          };
-        }
-
-        let area = 0;
-        for (let i = 0; i < points.length; i++) {
-          const j = (i + 1) % points.length;
-          area += points[i].x * points[j].y;
-          area -= points[j].x * points[i].y;
-        }
-
-        area = Math.abs(area) / 2;
-
-        return {
-          content: [{ type: 'text', text: `The calculated area is: ${area}` }],
-        };
-      }
-
-      default:
-        throw new Error(`Unknown tool: ${name}`);
-    }
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Error executing tool ${name}: ${
-            error instanceof Error ? error.message : 'Unknown error'
-          }`,
-        },
-      ],
-      isError: true,
-    };
-  }
-};
-
 server.setRequestHandler(CallToolRequestSchema, callToolHandler);
-
 
 /**
  * Start the server
@@ -219,8 +114,7 @@ server.setRequestHandler(CallToolRequestSchema, callToolHandler);
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  
-  // Log to stderr so it doesn't interfere with MCP communication on stdout
+
   console.error('Mudd Monkies MCP Server running on stdio');
   console.error('Ready for Claude integration');
 }

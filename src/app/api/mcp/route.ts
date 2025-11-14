@@ -1,55 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { spawn } from 'child_process';
-import path from 'path';
+import { callToolHandler } from '../../../../mcp-server/src/tool-handler';
 import fs from 'fs/promises';
 import os from 'os';
+import path from 'path';
 
 export async function POST(req: NextRequest) {
-  const { method, params } = await req.json();
+  const params = await req.json();
 
   let tempFilePath: string | undefined;
-  if (method === 'pdf_extract_text' && params.fileContent) {
+
+  // Handle file content passed from the frontend
+  if (params.fileName && params.fileContent) {
     const { fileName, fileContent } = params;
     const buffer = Buffer.from(fileContent, 'base64');
     tempFilePath = path.join(os.tmpdir(), fileName);
     await fs.writeFile(tempFilePath, buffer);
+
+    // Replace fileContent with the filePath for the handler
     params.filePath = tempFilePath;
     delete params.fileContent;
     delete params.fileName;
   }
 
-  const mcpServerPath = path.resolve(process.cwd(), 'mcp-server/build/index.js');
-  const mcpServer = spawn('node', [mcpServerPath], {
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-
-  mcpServer.stdin.write(JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }));
-  mcpServer.stdin.end();
-
-  let responseData = '';
-  for await (const chunk of mcpServer.stdout) {
-    responseData += chunk;
-  }
-
-  let errorData = '';
-  for await (const chunk of mcpServer.stderr) {
-    errorData += chunk;
-  }
-
-  if (tempFilePath) {
-    await fs.unlink(tempFilePath);
-  }
-
-  if (errorData) {
-    console.error('MCP Server Error:', errorData);
-    return NextResponse.json({ error: 'MCP Server Error', details: errorData }, { status: 500 });
-  }
+  // Construct the request object for the tool handler
+  const toolRequest = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'call-tool',
+    params: {
+      name: params.toolName,
+      arguments: params,
+    },
+  };
 
   try {
-    const response = JSON.parse(responseData);
-    return NextResponse.json(response);
+    const result = await callToolHandler(toolRequest);
+    return NextResponse.json({ result });
   } catch (error) {
-    console.error('Error parsing MCP server response:', error);
-    return NextResponse.json({ error: 'Error parsing MCP server response', details: responseData }, { status: 500 });
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json(
+      { error: 'Tool handler failed', details: errorMessage },
+      { status: 500 }
+    );
+  } finally {
+    // Clean up the temporary file
+    if (tempFilePath) {
+      await fs.unlink(tempFilePath);
+    }
   }
 }

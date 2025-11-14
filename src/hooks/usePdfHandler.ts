@@ -24,7 +24,7 @@ export const usePdfHandler = () => {
 
   const loadPdf = useCallback(async (file: File) => {
     const fileReader = new FileReader();
-    fileReader.onload = async function() {
+    fileReader.onload = async function () {
       const typedarray = new Uint8Array(this.result as ArrayBuffer);
       const loadedPdf = await pdfjsLib.getDocument(typedarray).promise;
       setPdf(loadedPdf);
@@ -55,67 +55,95 @@ export const usePdfHandler = () => {
     context.clearRect(0, 0, canvas.width, canvas.height);
     await page.render({
       canvasContext: context,
-      viewport: viewport
+      viewport: viewport,
     }).promise;
   }, [pdf, currentPage, scale]);
 
-  const calculateDistance = useCallback((points: Point[]) => {
-    if (points.length !== 2 || !pixelsPerUnit) return null;
-    const [p1, p2] = points;
-    const pixels = Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-    return (pixels / pixelsPerUnit).toFixed(2);
-  }, [pixelsPerUnit]);
+  const calculateDistance = useCallback(
+    (points: Point[]) => {
+      if (points.length !== 2 || !pixelsPerUnit) return null;
+      const [p1, p2] = points;
+      const pixels = Math.sqrt(
+        Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2)
+      );
+      return (pixels / pixelsPerUnit).toFixed(2);
+    },
+    [pixelsPerUnit]
+  );
 
-  const calculateArea = useCallback((points: Point[]) => {
-    if (points.length < 3 || !pixelsPerUnit) return null;
-    let area = 0;
-    for (let i = 0; i < points.length; i++) {
-      const j = (i + 1) % points.length;
-      area += points[i].x * points[j].y;
-      area -= points[j].x * points[i].y;
-    }
-    area = Math.abs(area) / 2;
-    return ((area / Math.pow(pixelsPerUnit, 2))).toFixed(2);
-  }, [pixelsPerUnit]);
-
-  const drawMeasurement = useCallback((points: Point[], isPreview = false, type: 'linear' | 'area' = 'linear') => {
-    if (!annotationCanvasRef.current) return;
-    const context = annotationCanvasRef.current.getContext('2d');
-    if (!context) return;
-
-    context.beginPath();
-    context.moveTo(points[0].x, points[0].y);
-    points.forEach((point, i) => {
-      if (i > 0) context.lineTo(point.x, point.y);
-    });
-
-    if (type === 'area' && !isPreview) {
-      context.closePath();
-    }
-
-    context.strokeStyle = type === 'linear' ? 
-      (isPreview ? '#FF000080' : '#FF0000') : 
-      (isPreview ? '#0000FF80' : '#0000FF');
-    context.lineWidth = 2;
-    context.stroke();
-
-    if (pixelsPerUnit) {
-      const value = type === 'linear' ? calculateDistance(points) : calculateArea(points);
-      if (value) {
-        const centerX = points.reduce((sum, p) => sum + p.x, 0) / points.length;
-        const centerY = points.reduce((sum, p) => sum + p.y, 0) / points.length;
-        context.font = '14px Arial';
-        context.fillStyle = type === 'linear' ? 
-          (isPreview ? '#FF000080' : '#FF0000') : 
-          (isPreview ? '#0000FF80' : '#0000FF');
-        context.fillText(
-          `${value} ${measurementUnit}${type === 'area' ? '²' : ''}`, 
-          centerX, 
-          centerY
-        );
+  const calculateArea = useCallback(
+    (points: Point[]) => {
+      if (points.length < 3 || !pixelsPerUnit) return null;
+      let area = 0;
+      for (let i = 0; i < points.length; i++) {
+        const j = (i + 1) % points.length;
+        area += points[i].x * points[j].y;
+        area -= points[j].x * points[i].y;
       }
-    }
-  }, [calculateArea, calculateDistance, measurementUnit, pixelsPerUnit]);
+      area = Math.abs(area) / 2;
+      return (area / Math.pow(pixelsPerUnit, 2)).toFixed(2);
+    },
+    [pixelsPerUnit]
+  );
+
+  const drawMeasurement = useCallback(
+    (
+      points: Point[],
+      isPreview = false,
+      type: 'linear' | 'area' = 'linear'
+    ) => {
+      if (!annotationCanvasRef.current) return;
+      const context = annotationCanvasRef.current.getContext('2d');
+      if (!context) return;
+
+      context.beginPath();
+      context.moveTo(points[0].x, points[0].y);
+      points.forEach((point, i) => {
+        if (i > 0) context.lineTo(point.x, point.y);
+      });
+
+      if (type === 'area' && !isPreview) {
+        context.closePath();
+      }
+
+      context.strokeStyle =
+        type === 'linear'
+          ? isPreview
+            ? '#FF000080'
+            : '#FF0000'
+          : isPreview
+            ? '#0000FF80'
+            : '#0000FF';
+      context.lineWidth = 2;
+      context.stroke();
+
+      if (pixelsPerUnit) {
+        const value =
+          type === 'linear' ? calculateDistance(points) : calculateArea(points);
+        if (value) {
+          const centerX =
+            points.reduce((sum, p) => sum + p.x, 0) / points.length;
+          const centerY =
+            points.reduce((sum, p) => sum + p.y, 0) / points.length;
+          context.font = '14px Arial';
+          context.fillStyle =
+            type === 'linear'
+              ? isPreview
+                ? '#FF000080'
+                : '#FF0000'
+              : isPreview
+                ? '#0000FF80'
+                : '#0000FF';
+          context.fillText(
+            `${value} ${measurementUnit}${type === 'area' ? '²' : ''}`,
+            centerX,
+            centerY
+          );
+        }
+      }
+    },
+    [calculateArea, calculateDistance, measurementUnit, pixelsPerUnit]
+  );
 
   const renderAnnotations = useCallback(() => {
     if (!annotationCanvasRef.current) return;
@@ -126,7 +154,7 @@ export const usePdfHandler = () => {
 
     // Draw completed measurements
     const pageMeasurements = measurements[currentPage] || [];
-    pageMeasurements.forEach(m => {
+    pageMeasurements.forEach((m) => {
       drawMeasurement(m.points, false, m.type);
     });
 
@@ -134,7 +162,14 @@ export const usePdfHandler = () => {
     if (currentMeasurement.length > 0) {
       drawMeasurement(currentMeasurement, true, tool as 'area' | 'linear');
     }
-  }, [measurements, currentPage, currentMeasurement, tool, canvasSize, drawMeasurement]);
+  }, [
+    measurements,
+    currentPage,
+    currentMeasurement,
+    tool,
+    canvasSize,
+    drawMeasurement,
+  ]);
 
   useEffect(() => {
     if (pdf) {
@@ -181,4 +216,4 @@ export const usePdfHandler = () => {
     calculateArea,
     renderAnnotations,
   };
-}; 
+};
