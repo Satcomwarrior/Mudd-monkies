@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: 'standalone',
+  turbopack: {},
   webpack: (config) => {
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {
