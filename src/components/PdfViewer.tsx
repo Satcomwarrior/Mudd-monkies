@@ -1,4 +1,4 @@
-import { ChangeEvent, MouseEvent } from 'react';
+import { ChangeEvent, MouseEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,6 +13,10 @@ import { MeasurementUnit, Point } from '@/types/pdf';
 import { Ruler, Move } from 'lucide-react';
 
 export function PdfViewer() {
+  const [extractedText, setExtractedText] = useState<string>('');
+  const [validationResult, setValidationResult] = useState<string>('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+
   const {
     pdfCanvasRef,
     annotationCanvasRef,
@@ -45,7 +49,70 @@ export function PdfViewer() {
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setUploadedFile(file);
       loadPdf(file);
+    }
+  };
+
+  const handleExtractText = async () => {
+    if (!uploadedFile) {
+      alert('Please upload a PDF file first.');
+      return;
+    }
+
+    const arrayBuffer = await uploadedFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+
+    const response = await fetch('/api/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        toolName: 'pdf_extract_text',
+        fileName: uploadedFile.name,
+        fileContent: base64,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.error) {
+      setExtractedText(`Error: ${result.details}`);
+    } else if (result.result.isError) {
+      setExtractedText(`Error: ${result.result.content[0].text}`);
+    } else {
+      setExtractedText(result.result.content[0].text);
+    }
+  };
+
+  const handleValidateBlueprint = async () => {
+    if (!uploadedFile) {
+      alert('Please upload a PDF file first.');
+      return;
+    }
+
+    const arrayBuffer = await uploadedFile.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+
+    const response = await fetch('/api/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        toolName: 'validate_blueprint',
+        fileName: uploadedFile.name,
+        fileContent: base64,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.error) {
+      setValidationResult(`Error: ${result.details}`);
+    } else if (result.result.isError) {
+      setValidationResult(`Error: ${result.result.content[0].text}`);
+    } else {
+      setValidationResult(result.result.content[0].text);
     }
   };
 
@@ -55,7 +122,7 @@ export function PdfViewer() {
     const rect = annotationCanvasRef.current.getBoundingClientRect();
     const point: Point = {
       x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      y: e.clientY - rect.top,
     };
 
     if (isSettingScale) {
@@ -63,8 +130,8 @@ export function PdfViewer() {
         setScaleReference(point);
       } else {
         const distance = Math.sqrt(
-          Math.pow(point.x - scaleReference.x, 2) + 
-          Math.pow(point.y - scaleReference.y, 2)
+          Math.pow(point.x - scaleReference.x, 2) +
+            Math.pow(point.y - scaleReference.y, 2)
         );
         setPixelsPerUnit(distance / parseFloat(actualLength));
         setIsSettingScale(false);
@@ -82,15 +149,12 @@ export function PdfViewer() {
           id: Date.now().toString(),
           type: 'linear' as const,
           points: [measureStart, point],
-          value: parseFloat(calculateDistance([measureStart, point]) || '0')
+          value: parseFloat(calculateDistance([measureStart, point]) || '0'),
         };
 
         setMeasurements({
           ...measurements,
-          [currentPage]: [
-            ...(measurements[currentPage] || []),
-            newMeasurement
-          ]
+          [currentPage]: [...(measurements[currentPage] || []), newMeasurement],
         });
         setMeasureStart(null);
         setCurrentMeasurement([]);
@@ -105,15 +169,12 @@ export function PdfViewer() {
           id: Date.now().toString(),
           type: 'area' as const,
           points: areaPoints,
-          value: parseFloat(calculateArea(areaPoints) || '0')
+          value: parseFloat(calculateArea(areaPoints) || '0'),
         };
 
         setMeasurements({
           ...measurements,
-          [currentPage]: [
-            ...(measurements[currentPage] || []),
-            newMeasurement
-          ]
+          [currentPage]: [...(measurements[currentPage] || []), newMeasurement],
         });
         setAreaPoints([]);
         setCurrentMeasurement([]);
@@ -132,7 +193,7 @@ export function PdfViewer() {
     const rect = annotationCanvasRef.current.getBoundingClientRect();
     const point: Point = {
       x: e.clientX - rect.left,
-      y: e.clientY - rect.top
+      y: e.clientY - rect.top,
     };
 
     if (tool === 'measure' && measureStart) {
@@ -151,7 +212,7 @@ export function PdfViewer() {
           onChange={handleFileChange}
           className="max-w-xs"
         />
-        
+
         <div className="flex items-center gap-2">
           <Input
             type="number"
@@ -162,7 +223,9 @@ export function PdfViewer() {
           />
           <Select
             value={measurementUnit}
-            onValueChange={(value) => setMeasurementUnit(value as MeasurementUnit)}
+            onValueChange={(value) =>
+              setMeasurementUnit(value as MeasurementUnit)
+            }
           >
             <SelectTrigger className="w-24">
               <SelectValue />
@@ -176,7 +239,7 @@ export function PdfViewer() {
           <Button
             onClick={() => setIsSettingScale(true)}
             disabled={!actualLength}
-            variant={isSettingScale ? "secondary" : "outline"}
+            variant={isSettingScale ? 'secondary' : 'outline'}
           >
             Set Scale
           </Button>
@@ -185,14 +248,14 @@ export function PdfViewer() {
         <div className="flex items-center gap-2">
           <Button
             onClick={() => setTool('measure')}
-            variant={tool === 'measure' ? "default" : "outline"}
+            variant={tool === 'measure' ? 'default' : 'outline'}
           >
             <Ruler className="w-4 h-4 mr-2" />
             Measure
           </Button>
           <Button
             onClick={() => setTool('area')}
-            variant={tool === 'area' ? "default" : "outline"}
+            variant={tool === 'area' ? 'default' : 'outline'}
           >
             <Move className="w-4 h-4 mr-2" />
             Area
@@ -223,7 +286,9 @@ export function PdfViewer() {
               Page {currentPage} of {pdf.numPages}
             </span>
             <Button
-              onClick={() => setCurrentPage(Math.min(pdf.numPages, currentPage + 1))}
+              onClick={() =>
+                setCurrentPage(Math.min(pdf.numPages, currentPage + 1))
+              }
               disabled={currentPage === pdf.numPages}
               variant="outline"
             >
@@ -231,7 +296,31 @@ export function PdfViewer() {
             </Button>
           </div>
         )}
+        <Button onClick={handleExtractText}>Extract Text</Button>
+        <Button onClick={handleValidateBlueprint}>Validate Blueprint</Button>
       </div>
+
+      {validationResult && (
+        <div className="w-full bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Validation Results</h3>
+          <textarea
+            className="w-full h-20 p-2 border rounded"
+            value={validationResult}
+            readOnly
+          />
+        </div>
+      )}
+
+      {extractedText && (
+        <div className="w-full bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Extracted Text</h3>
+          <textarea
+            className="w-full h-40 p-2 border rounded"
+            value={extractedText}
+            readOnly
+          />
+        </div>
+      )}
 
       <div className="relative inline-block">
         <canvas
@@ -247,7 +336,9 @@ export function PdfViewer() {
       </div>
 
       <div className="w-full bg-white p-4 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Measurements (Page {currentPage})</h3>
+        <h3 className="text-lg font-semibold mb-4">
+          Measurements (Page {currentPage})
+        </h3>
         <div className="space-y-2">
           {(measurements[currentPage] || []).map((m, i) => (
             <div
@@ -255,9 +346,13 @@ export function PdfViewer() {
               className="p-2 border-b border-gray-100 last:border-0 text-sm text-gray-600"
             >
               {m.type === 'linear' ? (
-                <span>Distance {i + 1}: {m.value} {measurementUnit}</span>
+                <span>
+                  Distance {i + 1}: {m.value} {measurementUnit}
+                </span>
               ) : (
-                <span>Area {i + 1}: {m.value} {measurementUnit}²</span>
+                <span>
+                  Area {i + 1}: {m.value} {measurementUnit}²
+                </span>
               )}
             </div>
           ))}
@@ -271,4 +366,4 @@ export function PdfViewer() {
       )}
     </div>
   );
-} 
+}
