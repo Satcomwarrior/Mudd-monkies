@@ -1,33 +1,36 @@
 # syntax=docker/dockerfile:1
 
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /app
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN apk add --no-cache libc6-compat
 
 FROM base AS deps
-COPY package.json ./
-# Install dependencies using npm. A lockfile is not available, so we
-# explicitly disable the frozen lockfile requirement.
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV NODE_ENV=production
 RUN npm run build
 
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy production node_modules and build output
-COPY --from=deps /app/node_modules ./node_modules
+RUN apk add --no-cache curl \
+  && addgroup -S nodejs \
+  && adduser -S nextjs -G nodejs
+
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.ts ./next.config.ts
-COPY --from=builder /app/tailwind.config.ts ./tailwind.config.ts
-COPY --from=builder /app/postcss.config.mjs ./postcss.config.mjs
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-COPY --from=builder /app/components.json ./components.json
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
+USER nextjs
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD curl -f http://127.0.0.1:3000/api/health || exit 1
+
+CMD ["node", "server.js"]
