@@ -3,9 +3,6 @@
 /**
  * MCP Server for PDF Takeoff Tool
  * Provides tools for construction measurement and PDF analysis
- * 
- * This is a minimal scaffold implementing MCP (Model Context Protocol)
- * with a placeholder echo tool for development and testing.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -15,10 +12,7 @@ import {
   ListToolsRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
-
-interface EchoArgs {
-  message?: string;
-}
+import { callToolHandler } from './tool-handler.js';
 
 /**
  * Create the MCP server instance
@@ -54,11 +48,55 @@ const TOOLS: Tool[] = [
       required: ['message'],
     },
   },
-  // TODO: Add more construction-specific tools:
-  // - pdf_extract_measurements
-  // - calculate_area
-  // - estimate_materials
-  // - validate_blueprint
+  {
+    name: 'pdf_extract_text',
+    description: 'Extract text content from a PDF file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description: 'The absolute path to the PDF file',
+        },
+      },
+      required: ['filePath'],
+    },
+  },
+  {
+    name: 'calculate_area',
+    description: 'Calculate the area of a polygon given a list of points',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        points: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              x: { type: 'number' },
+              y: { type: 'number' },
+            },
+            required: ['x', 'y'],
+          },
+        },
+      },
+      required: ['points'],
+    },
+  },
+  {
+    name: 'validate_blueprint',
+    description: 'Perform basic quality checks on a blueprint PDF',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description: 'The absolute path to the PDF file',
+        },
+      },
+      required: ['filePath'],
+    },
+  },
 ];
 
 /**
@@ -68,38 +106,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools: TOOLS };
 });
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args } = request.params;
-
-  try {
-    switch (name) {
-      case 'echo': {
-        const { message } = args as EchoArgs;
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Echo: ${message || 'No message provided'}`,
-            },
-          ],
-        };
-      }
-
-      default:
-        throw new Error(`Unknown tool: ${name}`);
-    }
-  } catch (error) {
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `Error executing tool ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        },
-      ],
-      isError: true,
-    };
-  }
-});
+server.setRequestHandler(CallToolRequestSchema, callToolHandler);
 
 /**
  * Start the server
@@ -107,8 +114,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  
-  // Log to stderr so it doesn't interfere with MCP communication on stdout
+
   console.error('Mudd Monkies MCP Server running on stdio');
   console.error('Ready for Claude integration');
 }

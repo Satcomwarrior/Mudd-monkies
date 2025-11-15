@@ -28,7 +28,7 @@
 
 After exhaustive searching of GitHub and web resources, **no Budibase repository exists for blueprint measurement or takeoff tools**. The Budibase organization (github.com/Budibase) contains their low-code platform and related tools, but none address construction drawings or measurement functionality.
 
-**Possible explanations:** The repository may be private, misidentified, deleted, or may not exist. Budibase itself is a low-code platform that could theoretically be used to *build* such applications, but no pre-built solution exists in their public repositories.
+**Possible explanations:** The repository may be private, misidentified, deleted, or may not exist. Budibase itself is a low-code platform that could theoretically be used to _build_ such applications, but no pre-built solution exists in their public repositories.
 
 **Alternative paths forward:** This research identifies 7 open-source construction takeoff tools and provides complete technical specifications to build your own enterprise solution.
 
@@ -51,22 +51,26 @@ After exhaustive searching of GitHub and web resources, **no Budibase repository
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/Satcomwarrior/Mudd-monkies.git
 cd Mudd-monkies
 ```
 
 2. Install Python dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 3. Install Node.js dependencies:
+
 ```bash
 npm ci
 ```
 
 4. Build the frontend:
+
 ```bash
 npm run build
 ```
@@ -115,6 +119,7 @@ python -m pytest --cov=src tests/
 1. **Lazy Loading**: The system uses lazy loading for heavy dependencies (numpy, shapely, rtree, keras_ocr). These are only loaded when first needed.
 
 2. **Singleton Pattern**: OCR pipeline uses singleton pattern to ensure expensive model initialization happens only once:
+
 ```python
 from src.ocr_service import get_ocr_pipeline
 
@@ -123,6 +128,7 @@ pipeline = get_ocr_pipeline()
 ```
 
 3. **Image Preprocessing**: Resize large blueprints before processing to reduce memory footprint:
+
 ```python
 import cv2
 
@@ -137,6 +143,7 @@ if max(h, w) > max_dim:
 ### CPU Performance
 
 1. **Batch Processing**: Process multiple images in batches for better GPU utilization:
+
 ```python
 ocr_service = OCRService()
 images = [cv2.imread(f'blueprint_{i}.png') for i in range(10)]
@@ -144,6 +151,7 @@ results = ocr_service.extract_text_from_images(images)
 ```
 
 2. **Parallel Processing**: Use multiprocessing for CPU-bound geometry operations:
+
 ```python
 from multiprocessing import Pool
 from src.geometry_utils import get_geometry_processor
@@ -159,11 +167,13 @@ with Pool(4) as pool:
 ### GPU Acceleration
 
 1. **TensorFlow GPU**: Install TensorFlow with GPU support for faster OCR:
+
 ```bash
 pip install tensorflow-gpu==2.12.0
 ```
 
 2. **CUDA Configuration**: Set optimal CUDA settings:
+
 ```python
 import os
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
@@ -173,6 +183,7 @@ os.environ['TF_GPU_THREAD_MODE'] = 'gpu_private'
 ### Caching Strategy
 
 1. **Spatial Index Caching**: Cache spatial indices for frequently accessed geometries:
+
 ```python
 from functools import lru_cache
 
@@ -183,6 +194,7 @@ def get_cached_spatial_index(geometry_hash):
 ```
 
 2. **OCR Results Caching**: Cache OCR results for unchanged blueprint versions:
+
 ```python
 import hashlib
 import pickle
@@ -190,11 +202,11 @@ import pickle
 def get_cached_ocr_result(image):
     image_hash = hashlib.md5(image.tobytes()).hexdigest()
     cache_file = f'cache/ocr_{image_hash}.pkl'
-    
+
     if os.path.exists(cache_file):
         with open(cache_file, 'rb') as f:
             return pickle.load(f)
-    
+
     # Process and cache
     result = ocr_service.extract_text_from_images([image])
     with open(cache_file, 'wb') as f:
@@ -210,13 +222,13 @@ import time
 def benchmark_analysis(image_path, iterations=10):
     image = cv2.imread(image_path)
     analysis_service = BlueprintAnalysisService()
-    
+
     times = []
     for _ in range(iterations):
         start = time.time()
         results = analysis_service.analyze_blueprint(image)
         times.append(time.time() - start)
-    
+
     print(f"Average time: {sum(times)/len(times):.2f}s")
     print(f"Min time: {min(times):.2f}s")
     print(f"Max time: {max(times):.2f}s")
@@ -260,23 +272,23 @@ This project uses the following open-source libraries:
 
 #### Core Dependencies
 
-| Library | License | Purpose |
-|---------|---------|----------|
-| **keras-ocr** | MIT | OCR text detection and recognition |
-| **TensorFlow** | Apache 2.0 | Deep learning framework for OCR models |
-| **NumPy** | BSD-3-Clause | Numerical computing for geometry calculations |
-| **Shapely** | BSD-3-Clause | Geometric operations and spatial analysis |
-| **Rtree** | MIT | Spatial indexing for efficient geometric queries |
-| **OpenCV** | Apache 2.0 | Image processing and computer vision |
+| Library        | License      | Purpose                                          |
+| -------------- | ------------ | ------------------------------------------------ |
+| **keras-ocr**  | MIT          | OCR text detection and recognition               |
+| **TensorFlow** | Apache 2.0   | Deep learning framework for OCR models           |
+| **NumPy**      | BSD-3-Clause | Numerical computing for geometry calculations    |
+| **Shapely**    | BSD-3-Clause | Geometric operations and spatial analysis        |
+| **Rtree**      | MIT          | Spatial indexing for efficient geometric queries |
+| **OpenCV**     | Apache 2.0   | Image processing and computer vision             |
 
 #### Development Dependencies
 
-| Library | License | Purpose |
-|---------|---------|----------|
-| **pytest** | MIT | Testing framework |
-| **pytest-cov** | MIT | Code coverage reporting |
-| **black** | MIT | Code formatting |
-| **mypy** | MIT | Static type checking |
+| Library        | License | Purpose                 |
+| -------------- | ------- | ----------------------- |
+| **pytest**     | MIT     | Testing framework       |
+| **pytest-cov** | MIT     | Code coverage reporting |
+| **black**      | MIT     | Code formatting         |
+| **mypy**       | MIT     | Static type checking    |
 
 ### Attribution Requirements
 
@@ -315,9 +327,10 @@ To ensure license compliance:
 ### Contact
 
 For licensing questions or commercial licensing inquiries:
+
 - GitHub Issues: [https://github.com/Satcomwarrior/Mudd-monkies/issues](https://github.com/Satcomwarrior/Mudd-monkies/issues)
 - Email: (Contact information to be added)
 
 ---
 
-*Note: These sections have been merged from documentation-additions.md into the main enterprise document.*
+_Note: These sections have been merged from documentation-additions.md into the main enterprise document._
