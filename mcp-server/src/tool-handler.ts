@@ -102,10 +102,8 @@ export const callToolHandler = async (request: any) => {
         const { filePath } = args as unknown as ValidateBlueprintArgs;
         try {
           const pdfExtract = new PDFExtract();
-          const data = await pdfExtract.extract(filePath, {
-            workerSrc: typeof window !== 'undefined' ? '/pdf.worker.js' : undefined,
-          });
-          const text = data.pages.map((page) => page.content.map((item) => item.str).join(' ')).join('\n').toLowerCase();
+          const data = await pdfExtract.extract(filePath, {});
+          const text = data.pages.map((page: any) => page.content.map((item: any) => item.str).join(' ')).join('\n').toLowerCase();
 
           const hasTitleBlock = /project:|title:|revision:|sheet:|drawn by:/.test(text);
           const hasScale = /scale:|scale =|scale: \d|"=|= \d'|"\s*=\s*\d+'/.test(text);
