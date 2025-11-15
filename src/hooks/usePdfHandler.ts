@@ -54,7 +54,7 @@ export const usePdfHandler = () => {
 
     context.clearRect(0, 0, canvas.width, canvas.height);
     await page.render({
-      canvasContext: context,
+      canvas: canvas,
       viewport: viewport,
     }).promise;
   }, [pdf, currentPage, scale]);
