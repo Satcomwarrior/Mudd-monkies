@@ -8,29 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Security
-- Upgraded Next.js from 15.0.3 to 16.0.3 to fix critical security vulnerabilities:
-  - Fixed DoS vulnerability with Server Actions (GHSA-7m27-7ghc-44w9)
-  - Fixed information exposure in dev server (GHSA-3h52-269p-cp9r)
-  - Fixed cache key confusion for Image Optimization API (GHSA-g5qg-72qw-gw5v)
-  - Fixed content injection vulnerability for Image Optimization (GHSA-xv57-4mr9-wg8v)
-  - Fixed improper middleware redirect handling leading to SSRF (GHSA-4342-x723-ch2f)
-  - Fixed race condition to cache poisoning (GHSA-qpjv-v59x-3qc4)
-  - Fixed authorization bypass in middleware (GHSA-f82v-jwr5-mffw)
-- Upgraded pdfjs-dist from 3.11.174 to 5.4.394 to fix high severity vulnerability:
-  - Fixed arbitrary JavaScript execution vulnerability when opening malicious PDFs (GHSA-wgrm-67xf-hhpq)
-
-### Added
-- Added pdf.js-extract 0.2.1 dependency for PDF text extraction functionality
-- Created ESLint 9 flat config (eslint.config.mjs) for proper linting support
-
-### Changed
-- Updated eslint-config-next from 15.0.3 to 16.0.3 for compatibility with Next.js 16
-- Upgraded ESLint from 8 to 9 for compatibility with Next.js 16
-- Updated pdfjs-dist API usage: changed `page.render()` to use `canvas` property instead of deprecated `canvasContext`
-- Modified build script to explicitly use webpack mode (`--webpack` flag) for compatibility with canvas aliasing
-- Updated lint script to use eslint directly instead of next lint command
+- **CRITICAL**: Upgraded Next.js from 15.0.3 to 15.5.6 to fix multiple critical security vulnerabilities:
+  - Fixed Denial of Service (DoS) with Server Actions (GHSA-7m27-7ghc-44w9)
+  - Fixed information exposure in dev server due to lack of origin verification (GHSA-3h52-269p-cp9r)
+  - Fixed Cache Key Confusion for Image Optimization API Routes (GHSA-g5qg-72qw-gw5v)
+  - Fixed Content Injection Vulnerability for Image Optimization (GHSA-xv57-4mr9-wg8v)
+  - Fixed Improper Middleware Redirect Handling Leads to SSRF (GHSA-4342-x723-ch2f)
+  - Fixed Race Condition to Cache Poisoning (GHSA-qpjv-v59x-3qc4)
+  - Fixed Authorization Bypass in Middleware (GHSA-f82v-jwr5-mffw)
+- **HIGH**: Upgraded pdfjs-dist from 3.11.174 to 4.10.38 to fix arbitrary JavaScript execution vulnerability (GHSA-wgrm-67xf-hhpq)
+- Upgraded eslint-config-next from 15.0.3 to 15.5.6 for compatibility
 
 ### Fixed
-- Fixed pdfjs-dist breaking change: Updated render API call in usePdfHandler hook to use new canvas-based rendering
-- Added turbopack config to next.config.ts to silence warnings about webpack configuration
-- Resolved ESLint 9 configuration issues by creating proper flat config file
+- Added missing pdf.js-extract dependency required by MCP server tool handler
