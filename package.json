@@ -1,4 +1,7 @@
-{
+"devDependencies": {
+  "webpack": "<appropriate version>",
+  "webpack-cli": "<appropriate version>"
+}{
   "name": "agent-test",
   "version": "0.1.0",
   "private": true,
