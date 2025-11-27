@@ -1,9 +1,9 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  output: "standalone",
+  output: 'standalone',
   webpack: (config) => {
     config.resolve = config.resolve ?? {};
     config.resolve.alias = {

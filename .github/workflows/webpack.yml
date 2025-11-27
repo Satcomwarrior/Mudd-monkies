@@ -2,12 +2,12 @@ name: NodeJS with Webpack
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ['main']
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
   pull_request:
-    branches: [ "main" ]
+    branches: ['main']
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
@@ -21,20 +21,20 @@ jobs:
         node-version: [20.x]
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-    - name: Install dependencies
-      run: |
-        if [ -f package-lock.json ]; then
-          echo "📦 Using npm ci with existing lockfile"
-          npm ci
-        else
-          echo "⚠️  No package-lock.json found, using npm install"
-          echo "Note: Please generate and commit package-lock.json for reproducible builds"
-          npm install
-        fi
-    - name: Build with webpack
-      run: npm run build
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            echo "📦 Using npm ci with existing lockfile"
+            npm ci
+          else
+            echo "⚠️  No package-lock.json found, using npm install"
+            echo "Note: Please generate and commit package-lock.json for reproducible builds"
+            npm install
+          fi
+      - name: Build with webpack
+        run: npm run build
