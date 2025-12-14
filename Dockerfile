@@ -21,8 +21,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN apk add --no-cache curl \
-  && addgroup -S nodejs \
-  && adduser -S nextjs -G nodejs
+  && addgroup -S nextjs \
+  && adduser -S nextjs -G nextjs
 
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
