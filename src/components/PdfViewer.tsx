@@ -49,6 +49,9 @@ export function PdfViewer() {
     }
   };
 
+  const parsedActualLength = Number(actualLength);
+  const isValidActualLength = Number.isFinite(parsedActualLength) && parsedActualLength > 0;
+
   const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
     if (!annotationCanvasRef.current) return;
 
@@ -66,7 +69,13 @@ export function PdfViewer() {
           Math.pow(point.x - scaleReference.x, 2) + 
           Math.pow(point.y - scaleReference.y, 2)
         );
-        setPixelsPerUnit(distance / parseFloat(actualLength));
+        if (!isValidActualLength) {
+          setIsSettingScale(false);
+          setScaleReference(null);
+          return;
+        }
+
+        setPixelsPerUnit(distance / parsedActualLength);
         setIsSettingScale(false);
         setScaleReference(null);
       }
@@ -173,9 +182,12 @@ export function PdfViewer() {
               <SelectItem value="in">Inches</SelectItem>
             </SelectContent>
           </Select>
+          {!isValidActualLength && actualLength && (
+            <p className="text-xs text-red-600">Enter a positive, non-zero length to set scale.</p>
+          )}
           <Button
             onClick={() => setIsSettingScale(true)}
-            disabled={!actualLength}
+            disabled={!isValidActualLength}
             variant={isSettingScale ? "secondary" : "outline"}
           >
             Set Scale

@@ -48,8 +48,9 @@ A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
+- [Skaffold](https://skaffold.dev/) (optional, for local Kubernetes development)
 - Claude Desktop (for MCP integration)
 
 ### Installation
@@ -85,6 +86,39 @@ npm run dev
 ```
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Running with Skaffold
+
+For a production-like loop on a local Kubernetes cluster (such as [minikube](https://minikube.sigs.k8s.io/docs/) or [kind](https://kind.sigs.k8s.io/)), the repository ships with a hardened Skaffold configuration. Skaffold will build the Docker image with reproducible Git-based tags, apply the manifests, and port-forward traffic back to your machine.
+
+```bash
+skaffold dev
+```
+
+Once the deployment is ready, Skaffold forwards `localhost:3000` to the in-cluster service so you can interact with the app as usual.
+
+> **Tip:** For a one-off deployment that mirrors a production rollout, run `skaffold run`. Skaffold will build with the same settings but exit once the deployment becomes healthy.
+
+### Containerized Production Build
+
+The included multi-stage Dockerfile produces a slim, non-root image that serves the Next.js [standalone output](https://nextjs.org/docs/app/building-your-application/deploying#standalone-mode). To build and run it locally:
+
+```bash
+docker build -t mudd-monkies-web .
+docker run --rm -p 3000:3000 mudd-monkies-web
+```
+
+The container exposes port `3000`, responds to `/api/health`, and declares a `HEALTHCHECK` so orchestrators can determine readiness.
+
+### Kubernetes Deployment
+
+The manifests under `k8s/` describe a production-ready deployment with two replicas, resource requests/limits, and strict pod security defaults. Apply them to any cluster (after pushing the image to a registry your cluster can reach):
+
+```bash
+kubectl apply -f k8s/
+```
+
+The `Service` publishes the application on port `80`, while the `Deployment` defines HTTP probes hitting `/api/health` to guarantee the pods are healthy before accepting traffic.
 
 ## Usage
 

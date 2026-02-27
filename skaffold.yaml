@@ -1,0 +1,26 @@
+apiVersion: skaffold/v4beta6
+kind: Config
+metadata:
+  name: mudd-monkies
+build:
+  tagPolicy:
+    gitCommit: {}
+  local:
+    push: false
+    useDockerCLI: true
+  artifacts:
+    - image: mudd-monkies-web
+      context: .
+      docker:
+        dockerfile: Dockerfile
+deploy:
+  kubectl:
+    manifests:
+      - k8s/deployment.yaml
+      - k8s/service.yaml
+portForward:
+  - resourceType: service
+    resourceName: mudd-monkies-web
+    namespace: default
+    port: 80
+    localPort: 3000
