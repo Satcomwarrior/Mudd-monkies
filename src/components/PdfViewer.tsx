@@ -1,4 +1,4 @@
-import { ChangeEvent, MouseEvent } from 'react';
+import { ChangeEvent, MouseEvent, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -52,6 +52,8 @@ export function PdfViewer() {
   const parsedActualLength = Number(actualLength);
   const isValidActualLength = Number.isFinite(parsedActualLength) && parsedActualLength > 0;
 
+  const [scaleDistanceError, setScaleDistanceError] = useState(false);
+
   const handleCanvasClick = (e: MouseEvent<HTMLCanvasElement>) => {
     if (!annotationCanvasRef.current) return;
 
@@ -63,6 +65,7 @@ export function PdfViewer() {
 
     if (isSettingScale) {
       if (!scaleReference) {
+        setScaleDistanceError(false);
         setScaleReference(point);
       } else {
         const distance = Math.sqrt(
@@ -75,6 +78,13 @@ export function PdfViewer() {
           return;
         }
 
+        if (distance === 0) {
+          setScaleDistanceError(true);
+          setScaleReference(null);
+          return;
+        }
+
+        setScaleDistanceError(false);
         setPixelsPerUnit(distance / parsedActualLength);
         setIsSettingScale(false);
         setScaleReference(null);
@@ -185,8 +195,11 @@ export function PdfViewer() {
           {!isValidActualLength && actualLength && (
             <p className="text-xs text-red-600">Enter a positive, non-zero length to set scale.</p>
           )}
+          {scaleDistanceError && (
+            <p className="text-xs text-red-600">The two reference points must be different. Click a second point away from the first.</p>
+          )}
           <Button
-            onClick={() => setIsSettingScale(true)}
+            onClick={() => { setScaleDistanceError(false); setIsSettingScale(true); }}
             disabled={!isValidActualLength}
             variant={isSettingScale ? "secondary" : "outline"}
           >
