@@ -24,7 +24,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: web
-          image: mudd-monkies-web
+          image: mudd-monkies-web:REPLACE_ME
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
