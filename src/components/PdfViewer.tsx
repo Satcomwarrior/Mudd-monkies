@@ -78,7 +78,7 @@ export function PdfViewer() {
           return;
         }
 
-        if (distance === 0) {
+        if (distance < 1) {
           setScaleDistanceError(true);
           setScaleReference(null);
           return;
