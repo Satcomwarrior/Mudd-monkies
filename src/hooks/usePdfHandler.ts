@@ -160,7 +160,9 @@ export const usePdfHandler = () => {
 
     // Draw current measurement preview
     if (currentMeasurement.length > 0) {
-      drawMeasurement(currentMeasurement, true, tool as 'area' | 'linear');
+      const previewType: 'area' | 'linear' =
+        tool === 'measure' ? 'linear' : 'area';
+      drawMeasurement(currentMeasurement, true, previewType);
     }
   }, [
     measurements,
