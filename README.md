@@ -1,3 +1,13 @@
+# Repository Identity
+
+**This repository is the PDF Takeoff Tool. It is not the Always Elevated storefront and it is not the retired Semper High backend.**
+
+The active Always Elevated commerce/storefront repository is `Satcomwarrior/mudd-monkies-store`.
+
+This repository remains a separate construction/blueprint takeoff application. New storefront, Shopify, POD, fulfillment, product-catalog, checkout, or commerce work does not belong here.
+
+---
+
 # PDF Takeoff Tool
 
 A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn/ui that allows users to measure distances and areas directly on PDF blueprints.
