@@ -1,6 +1,13 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { PDFExtract } from 'pdf.js-extract';
+import {
+  Point,
+  shoelaceArea,
+  euclideanDistance,
+  scaledArea,
+  scaledDistance,
+} from './geometry';
 
 // ─── Type Definitions ────────────────────────────────────────────────────────
 
@@ -10,11 +17,6 @@ interface EchoArgs {
 
 interface PdfExtractTextArgs {
   filePath: string;
-}
-
-interface Point {
-  x: number;
-  y: number;
 }
 
 interface CalculateAreaArgs {
@@ -69,22 +71,6 @@ interface ValidateBlueprintArgs {
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Shoelace formula — returns area in pixel² (or scaled units² if scaleFactor provided) */
-function shoelaceArea(points: Point[]): number {
-  let area = 0;
-  for (let i = 0; i < points.length; i++) {
-    const j = (i + 1) % points.length;
-    area += points[i].x * points[j].y;
-    area -= points[j].x * points[i].y;
-  }
-  return Math.abs(area) / 2;
-}
-
-/** Euclidean distance between two points */
-function euclideanDistance(p1: Point, p2: Point): number {
-  return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
-}
 
 /** Extract all text from a PDF, returning page-separated strings */
 async function extractPdfText(filePath: string): Promise<string[]> {
@@ -154,7 +140,7 @@ export const callToolHandler = async (request: any) => {
 
         if (scaleFactor && scaleFactor > 0) {
           // Convert pixel² → real-world units²
-          const realArea = pixelArea / (scaleFactor * scaleFactor);
+          const realArea = scaledArea(points, scaleFactor);
           return {
             content: [{
               type: 'text',
@@ -184,7 +170,7 @@ export const callToolHandler = async (request: any) => {
         }
 
         const pixelDist = euclideanDistance(point1, point2);
-        const realDist = pixelDist / scaleFactor;
+        const realDist = scaledDistance(point1, point2, scaleFactor);
 
         return {
           content: [{
