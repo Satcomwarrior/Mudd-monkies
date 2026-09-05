@@ -7,7 +7,9 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint src/ mcp-server/",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "npm test --prefix mcp-server",
+    "test:coverage": "npm run test:coverage --prefix mcp-server"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
@@ -40,5 +42,8 @@
     "typescript": "^5",
     "webpack": "^5.101.3",
     "webpack-cli": "^5.1.4"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
