@@ -27,6 +27,10 @@ A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn
 - 💾 Page-specific measurements
 - 🤖 **AI-Powered Tools** - AI-powered measurement assistance, text extraction, and blueprint validation.
 
+## Roadmap
+
+Q4 2025 planning and status tracking live in [`docs/ROADMAP.md`](docs/ROADMAP.md) (GitHub milestone [Q4 2025](https://github.com/Satcomwarrior/Mudd-monkies/milestone/1), issue [#10](https://github.com/Satcomwarrior/Mudd-monkies/issues/10)). The doc maps each checklist item to **Done / Partial / Not started** with pointers to real paths and follow-up issues—without changing this repo’s identity as the PDF takeoff tool.
+
 ## Tech Stack
 
 - [Next.js 15](https://nextjs.org/) - React framework
@@ -57,6 +61,9 @@ A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn
 │   │   └── tool-handler.ts # Core AI tool logic
 │   ├── package.json        # Dependencies
 │   └── tsconfig.json       # TypeScript config
+├── docs/
+│   ├── ROADMAP.md          # Q4 2025 roadmap status (#10)
+│   └── enterprise-construction-blueprint-takeoff.md
 └── README.md               # This file
 ```
 
