@@ -8,5 +8,6 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     root: path.resolve(__dirname),
+    include: ['src/**/*.test.ts'],
   },
 });
