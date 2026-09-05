@@ -10,6 +10,9 @@ This repository remains a separate construction/blueprint takeoff application. N
 
 # PDF Takeoff Tool
 
+[![CI](https://github.com/Satcomwarrior/Mudd-monkies/actions/workflows/ci.yml/badge.svg)](https://github.com/Satcomwarrior/Mudd-monkies/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A web-based construction takeoff tool built with Next.js, TypeScript, and shadcn/ui that allows users to measure distances and areas directly on PDF blueprints.
 
 ## Features
