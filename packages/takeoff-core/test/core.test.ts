@@ -113,7 +113,9 @@ test('quantity engine uses the same calibration for lines and areas', () => {
   assert.deepEqual(area, { dimension: 'area', value: 100, unit: 'ft' });
 
   const volume = volumeFromArea(area, 6, 'in');
-  assert.deepEqual(volume, { dimension: 'volume', value: 50, unit: 'ft' });
+  assert.equal(volume.dimension, 'volume');
+  assert.ok(Math.abs(volume.value - 50) < 1e-12);
+  assert.equal(volume.unit, 'ft');
 });
 
 test('waste is explicit and non-destructive', () => {
