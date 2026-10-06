@@ -9,7 +9,8 @@
     "lint": "eslint src/ mcp-server/",
     "format": "prettier --write .",
     "test": "npm test --prefix mcp-server",
-    "test:coverage": "npm run test:coverage --prefix mcp-server"
+    "test:coverage": "npm run test:coverage --prefix mcp-server",
+    "test:core": "node --experimental-strip-types --test packages/takeoff-core/test/*.test.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
